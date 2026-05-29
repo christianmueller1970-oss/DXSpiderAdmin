@@ -1,0 +1,49 @@
+# === Sicherheit: niemals Secrets/Einstellungen ins Repo ===
+# (Settings/Logs liegen ohnehin in ~/Documents/DXSpiderAdmin/, nicht hier — doppelter Schutz)
+*.key
+*.pem
+*_rsa
+*_ed25519
+id_*
+.env
+.env.*
+secrets*
+settings.json
+settings.local.json
+**/DXSpiderAdmin/settings.json
+
+# === macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# === Google Drive ===
+*.gdoc
+*.gsheet
+*.gslides
+.tmp.driveupload
+.tmp.drivedownload
+
+# === Swift / SwiftPM ===
+.build/
+.swiftpm/
+Package.resolved
+
+# === Xcode ===
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# === Notarisierung / Distribution ===
+*.app
+*.dmg
+*.zip
+ExportOptions.plist
