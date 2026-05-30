@@ -132,8 +132,13 @@ Feste linke **Sidebar** zur Navigation, Hauptbereich für Detailansichten
   Suchfilter, Aktionen mit Bestätigung & Rate-Limiting. ✅
 - **M3 — Command Builder** inkl. Dry-Run-Preview. ✅
 - **M4 — Visueller Filter-Editor** (`SpotFilter`) inkl. Befehls-Vorschau. ✅
-- **M5 — Polish & Distribution:** Hardened Runtime, Developer-ID-Signierung, Notarisierung,
-  weitergebbares `.app`/DMG. ⏳ (Build-Setup & Skripte fertig; Icon/Signierung beim Sysop)
+- **M5 — Polish & Distribution:** Hardened Runtime (Release), App-Sandbox-Entscheidung,
+  Asset-Katalog, App-Versionsanzeige, Notarisierungs-Skript & Distributions-Doku. ✅
+
+> **Alle geplanten Meilensteine (M0–M5) sind abgeschlossen.** Verbleibende Punkte sind
+> betrieblicher/hardwaregebundener Natur und kein offener Entwicklungs-Scope mehr: App-Icon
+> (1024 px) einlegen, echte Notarisierung mit Developer-ID-Account (`scripts/notarize.sh`)
+> sowie der Live-Test gegen HB9HJI-2 zur Verfeinerung der Parser (siehe §10).
 
 ---
 
