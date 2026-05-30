@@ -25,13 +25,28 @@ Daraus folgt der Vertriebsweg:
 ## Voraussetzungen (einmalig)
 
 1. Apple-Developer-Account, Zertifikat **„Developer ID Application"** im Schlüsselbund.
-2. Notarytool-Zugangsdaten als Schlüsselbund-Profil hinterlegen:
+2. Notarytool-Zugangsdaten als Schlüsselbund-Profil hinterlegen — **eine** der beiden Varianten:
+
+   **a) App-Store-Connect-API-Key** (empfohlen; der „App Key" `.p8` aus dem Dev-Account →
+   Users and Access → Integrations → App Store Connect API):
+   ```sh
+   xcrun notarytool store-credentials DXSpiderAdmin-Notary \
+     --key /pfad/AuthKey_XXXXXXXXXX.p8 \
+     --key-id "XXXXXXXXXX" \
+     --issuer "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+   ```
+   (Key-ID = Teil des Dateinamens; Issuer-ID steht oben auf der API-Keys-Seite.)
+
+   **b) Apple-ID + app-spezifisches Passwort:**
    ```sh
    xcrun notarytool store-credentials DXSpiderAdmin-Notary \
      --apple-id "deine@apple-id.example" \
      --team-id "DEINETEAMID" \
      --password "app-spezifisches-passwort"
    ```
+
+   > Zum **Signieren** ist zusätzlich ein Zertifikat **„Developer ID Application"** im
+   > Schlüsselbund nötig (Dev-Account → Certificates). Das ist unabhängig vom Notary-Key.
 3. In `scripts/ExportOptions.example.plist` `teamID` setzen und als `scripts/ExportOptions.plist`
    speichern (Letztere ist per `.gitignore` ausgeschlossen).
 

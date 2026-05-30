@@ -85,6 +85,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   überspringt eingerückte Fortsetzungszeilen (User-Listen) und wertet Nodes als verbunden,
   sofern nicht „disconnected". `ShowUsersParser` überspringt die Kopfzeile „Callsigns
   connected to <NODE>". Live verifiziert (Node-Tabelle), 2 neue Tests (gesamt 49 grün).
+- App-Icon: vollständiger macOS-Icon-Satz (16–512 px @1x/@2x) aus dem gelieferten Motiv
+  (Spinne/„DX"/Funk/Zahnrad) in `Assets.xcassets/AppIcon.appiconset`; kompiliert ohne Warnung
+  als `AppIcon.icns`. `docs/Distribution.md` um die API-Key-Variante (`notarytool
+  store-credentials --key …`) ergänzt.
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
