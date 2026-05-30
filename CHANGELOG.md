@@ -67,6 +67,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   das via `ProcessSysopChannel` verbindet und echte `show/*`-Ausgaben als Fixtures nach
   `~/Documents/DXSpiderAdmin/fixtures/` schreibt (Konfiguration aus `settings.json` oder
   Flags). Anleitung `docs/LiveTest.md`. Dient der Verifikation/Verfeinerung der Parser (§10).
+- Live-Test gegen HB9HJI-2 durchgeführt (Befund in `docs/NodeProtocol.md`): `console.pl` ist
+  eine **Curses-TUI** und als zeilenbasierter Kanal ungeeignet. Der saubere Transport ist der
+  **DXSpider-Console-Socket** (`127.0.0.1:27754`): zeilenbasiertes Protokoll mit Attach
+  `A<call>|…`, Befehl `I<call>|…` und Antworten `<sort><call>|<zeile>` (`D`=Ausgabe inkl.
+  bestätigtem Prompt-Format, `X`=Spot-Broadcast, `Z`=Ende). Sysop-Rechte ohne Challenge.
+  → Transport-Layer wird darauf umgestellt (nächster Schritt); `PromptDetector` passt bereits.
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
