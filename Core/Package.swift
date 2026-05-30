@@ -9,11 +9,20 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .library(name: "DXSpiderCore", targets: ["DXSpiderCore"])
+        .library(name: "DXSpiderCore", targets: ["DXSpiderCore"]),
+        // Diagnostic CLI to capture real node output as parser fixtures (live test, §10).
+        .executable(name: "dxspider-capture", targets: ["dxspider-capture"])
     ],
     targets: [
         .target(
             name: "DXSpiderCore",
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        ),
+        .executableTarget(
+            name: "dxspider-capture",
+            dependencies: ["DXSpiderCore"],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]

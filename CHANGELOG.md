@@ -63,6 +63,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Sidebar. Distributions-Doku `docs/Distribution.md`, Notarisierungs-Skript `scripts/notarize.sh`
   und `scripts/ExportOptions.example.plist`. Konzeptdokument-Roadmap (§7) auf M0–M4 ✅ /
   M5 ⏳ aktualisiert, Sandbox-Frage (§9/§10) entschieden.
+- Live-Test-Vorbereitung: read-only-CLI `dxspider-capture` (Executable im Swift Package),
+  das via `ProcessSysopChannel` verbindet und echte `show/*`-Ausgaben als Fixtures nach
+  `~/Documents/DXSpiderAdmin/fixtures/` schreibt (Konfiguration aus `settings.json` oder
+  Flags). Anleitung `docs/LiveTest.md`. Dient der Verifikation/Verfeinerung der Parser (§10).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
