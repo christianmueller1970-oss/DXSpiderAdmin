@@ -9,6 +9,9 @@ import Foundation
 /// Defined as a protocol so the core (and its tests) can run against a mock channel
 /// without a live server.
 public protocol SysopChannel: Sendable {
+    /// Current lifecycle state of the connection (for the UI health indicator).
+    var state: ConnectionState { get async }
+
     /// Establish the connection and reach a `ready` state.
     func connect() async throws
 

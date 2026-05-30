@@ -13,6 +13,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - Swift Package `DXSpiderCore` (Gerüst): Modelle (`PrivilegeLevel`, `ClusterUser`,
   `ClusterNode`), `ConnectionState`, Command-Builder (`DXCommand`), `SysopChannel`-Protokoll,
   vorläufiger `ShowUsersParser` sowie erste Unit-Tests.
+- M1 (Verbindungs-Layer, testbares Fundament): `PromptDetector` (Prompt-Erkennung als
+  Trennsignal), `ResponseAccumulator` (kontinuierliches Puffern → vollständige Antwort),
+  `ChannelMode` (Read-only-Default + Guard gegen destruktive Befehle), `CommandAuditLog`
+  (`AuditEntry`/`AuditSink`/`InMemoryAuditLog` — jede gesendete Zeile, auch blockierte) und
+  `InMemorySysopChannel` (vollständig testbarer Referenz-Kanal). `SysopChannel` um `state`
+  erweitert. 12 neue Unit-Tests (gesamt 20, grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
