@@ -89,6 +89,10 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   (Spinne/„DX"/Funk/Zahnrad) in `Assets.xcassets/AppIcon.appiconset`; kompiliert ohne Warnung
   als `AppIcon.icns`. `docs/Distribution.md` um die API-Key-Variante (`notarytool
   store-credentials --key …`) ergänzt.
+- **Erster notarisierter Build** erstellt (`scripts/notarize.sh`): Developer-ID-signiert,
+  Hardened Runtime, Apple-Notarisierung „Accepted", Ticket gestapelt, `spctl` „accepted —
+  source=Notarized Developer ID". Die App ist damit weitergebbar (Gatekeeper-konform).
+  `.gitignore` schützt zusätzlich `*.p8`/`AuthKey_*`.
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
