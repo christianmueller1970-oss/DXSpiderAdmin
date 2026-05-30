@@ -13,6 +13,14 @@ struct ContentView: View {
                     .tag(item)
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
+            .safeAreaInset(edge: .bottom) {
+                Text("DXSpider Admin \(Self.appVersion)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+            }
         } detail: {
             switch selection {
             case .connection:
@@ -25,6 +33,14 @@ struct ContentView: View {
                 FilterEditorView(model: connection)
             }
         }
+    }
+
+    /// App version + build, read from the bundle (e.g. "v0.1 (1)").
+    static var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "v\(short) (\(build))"
     }
 }
 

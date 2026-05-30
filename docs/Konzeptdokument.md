@@ -124,15 +124,16 @@ Feste linke **Sidebar** zur Navigation, Hauptbereich für Detailansichten
 
 ## 7. Roadmap / Meilensteine
 
-- **M0 — Fundament (dieses Setup):** Repo, Doku, Changelog, Memory, testbares
-  `DXSpiderCore`-Gerüst (Models, Commands, Parser-Stubs, Tests). ✅ in Arbeit
+- **M0 — Fundament:** Repo, Doku, Changelog, Memory, testbares `DXSpiderCore`-Gerüst. ✅
 - **M1 — Verbindungs-Layer:** SSH+console.pl-Subprozess, async Reader, Prompt-Erkennung,
-  Zustandsmaschine, manuelles Befehls-Senden mit Audit-Log + Read-only-Default.
+  Zustandsmaschine, manuelles Befehls-Senden mit Audit-Log + Read-only-Default, SwiftUI-App-
+  Target, Settings-/Audit-Persistenz. ✅
 - **M2 — User/Node-Verwaltung (MVP-Ziel):** `show/users`/`show/nodes` parsen, Tabelle,
-  Suchfilter, Aktionen mit Bestätigung & Rate-Limiting.
-- **M3 — Command Builder.**
-- **M4 — Visueller Filter-Editor** inkl. Befehls-Vorschau.
-- **M5 — Polish & Distribution:** Signierung, Notarisierung, weitergebbares `.app`/DMG.
+  Suchfilter, Aktionen mit Bestätigung & Rate-Limiting. ✅
+- **M3 — Command Builder** inkl. Dry-Run-Preview. ✅
+- **M4 — Visueller Filter-Editor** (`SpotFilter`) inkl. Befehls-Vorschau. ✅
+- **M5 — Polish & Distribution:** Hardened Runtime, Developer-ID-Signierung, Notarisierung,
+  weitergebbares `.app`/DMG. ⏳ (Build-Setup & Skripte fertig; Icon/Signierung beim Sysop)
 
 ---
 
@@ -159,15 +160,22 @@ DXSpiderAdmin/
 ## 9. Distribution
 
 - Apple-Developer-Account vorhanden → **Code-Signing + Notarisierung** für Gatekeeper.
-- Auslieferung als notarisiertes `.app`, optional als DMG.
-- **App-Sandbox** mit minimalen Rechten (ausgehende Netzwerkverbindung; Zugriff auf den
-  Dokumente-Ordner für Settings/Log). Kein Zugriff auf Secrets nötig (System-SSH).
+- Auslieferung als notarisiertes `.app`, optional als DMG. Ablauf & Skript: `docs/Distribution.md`,
+  `scripts/notarize.sh`.
+- **Vertriebsweg: Developer ID (nicht App Store), Hardened Runtime AN, App-Sandbox AUS.**
+  Begründung: Die App startet `/usr/bin/ssh` als Subprozess und nutzt `ssh-agent`/`~/.ssh` —
+  das ist mit der strikten App-Sandbox unvereinbar; der Hardened Runtime ist für die
+  Notarisierung Pflicht und erlaubt das Spawnen des System-`ssh` ohne Zusatz-Entitlement.
+  Kein Zugriff auf Secrets nötig (System-SSH).
 
 ---
 
 ## 10. Offene Punkte
 
-- Genaues Prompt-Format und Ausgabeformate des HB9HJI-2 (für Parser-Fixtures) erfassen.
-- SSH-Aufruf in der Sandbox: Verhalten von `Process`/`/usr/bin/ssh` unter App-Sandbox
-  prüfen (ggf. Entitlements/Helper nötig).
-- Mapping der Filter-UI auf exakte DXSpider-Filter-Syntax (M4).
+- Genaues Prompt-Format und Ausgabeformate des HB9HJI-2 (für Parser-Fixtures) erfassen —
+  `ShowUsersParser`/`ShowNodesParser` und `SpotFilter`-Syntax danach verifizieren/verfeinern.
+- ~~SSH-Aufruf in der Sandbox~~: **entschieden** — keine App-Sandbox, Developer ID +
+  Hardened Runtime (siehe §9 / `docs/Distribution.md`).
+- ~~Mapping der Filter-UI auf exakte DXSpider-Filter-Syntax~~: in `SpotFilter` umgesetzt
+  (provisorisch, gegen den echten Node noch zu bestätigen).
+- App-Icon (1024 px) in `Assets.xcassets/AppIcon.appiconset` einlegen.

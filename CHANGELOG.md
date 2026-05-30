@@ -57,6 +57,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Syntax liegt damit an einer getesteten Stelle. App: `FilterEditorView` mit Band-Checkboxen,
   Stationsfeldern, Live-Befehls-Vorschau und Anwenden/Leeren (destruktiv → Bestätigung).
   Neuer Sidebar-Eintrag „Filter-Editor". 6 neue Unit-Tests (gesamt 41, grün).
+- M5 (Polish & Distribution): **Hardened Runtime** im Release aktiviert (Signatur trägt das
+  `runtime`-Flag), App-Sandbox bewusst **AUS** (ssh-Subprozess), Vertriebsweg **Developer ID**.
+  Asset-Katalog (`AppIcon`-Slot + `AccentColor`) verdrahtet; App-Versionsanzeige in der
+  Sidebar. Distributions-Doku `docs/Distribution.md`, Notarisierungs-Skript `scripts/notarize.sh`
+  und `scripts/ExportOptions.example.plist`. Konzeptdokument-Roadmap (§7) auf M0–M4 ✅ /
+  M5 ⏳ aktualisiert, Sandbox-Frage (§9/§10) entschieden.
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
