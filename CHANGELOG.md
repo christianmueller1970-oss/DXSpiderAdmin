@@ -19,6 +19,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   (`AuditEntry`/`AuditSink`/`InMemoryAuditLog` — jede gesendete Zeile, auch blockierte) und
   `InMemorySysopChannel` (vollständig testbarer Referenz-Kanal). `SysopChannel` um `state`
   erweitert. 12 neue Unit-Tests (gesamt 20, grün).
+- M1 (echter SSH-Kanal): `SSHConnectionConfig` (nicht-geheime Verbindungsdaten + testbarer
+  `ssh`-Argument-Builder, `BatchMode=yes` für Key-only) und `ProcessSysopChannel` — startet
+  `/usr/bin/ssh -tt … console.pl` als Subprozess, liest stdout kontinuierlich asynchron über
+  `ResponseAccumulator`/`PromptDetector`, setzt `ChannelMode`-Guard + Audit + Timeouts durch,
+  beendet den Prozess sauber. Key-Auth bleibt vollständig beim System (`ssh-agent`/`~/.ssh`).
+  5 neue Unit-Tests (gesamt 25, grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
