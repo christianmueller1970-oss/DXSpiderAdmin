@@ -5,6 +5,9 @@
 *_rsa
 *_ed25519
 id_*
+# App Store Connect API keys (Notarisierung) — niemals ins Repo
+*.p8
+AuthKey_*
 .env
 .env.*
 secrets*
