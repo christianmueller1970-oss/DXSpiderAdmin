@@ -32,6 +32,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Audit-Log) und `ConnectionView` (Node-Felder, Konsole, manuelles Befehls-Senden,
   Status-Badge). Demo-Backend macht die App ohne Server bedienbar. Baut grün via
   `xcodebuild` (ad-hoc-signiert, lauffähig).
+- M1 (Settings & Audit-Persistenz, schließt M1 ab): `AppSettings`/`SettingsStore` lädt &
+  speichert die nicht-geheimen Verbindungsdaten als `~/Documents/DXSpiderAdmin/settings.json`
+  (Verzeichnis injizierbar, testbar); `FileAuditLog` (AuditSink → `audit.log`) und
+  `CompositeAuditSink` (Fan-out In-Memory + Datei). App lädt Settings beim Start, sichert sie
+  beim SSH-Verbinden bzw. per Button und schreibt jede Befehlszeile zusätzlich in die
+  Audit-Datei. 5 neue Unit-Tests (gesamt 30, grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.

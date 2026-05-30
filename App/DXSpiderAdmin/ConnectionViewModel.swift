@@ -21,10 +21,25 @@ final class ConnectionViewModel {
     private(set) var auditEntries: [AuditEntry] = []
     private(set) var consoleLog: String = ""
     private(set) var lastError: String?
+    private(set) var settingsMessage: String?
     var commandText: String = ""
 
     private var channel: (any SysopChannel)?
     private let audit = InMemoryAuditLog()
+    private let settingsStore: SettingsStore
+    private let auditSink: any AuditSink
+
+    init(settingsStore: SettingsStore = .standard()) {
+        self.settingsStore = settingsStore
+        let fileAudit = FileAuditLog(fileURL: settingsStore.directory.appendingPathComponent("audit.log"))
+        self.auditSink = CompositeAuditSink([audit, fileAudit])
+
+        // Restore non-secret connection settings if present (keys stay with the system).
+        if let saved = try? settingsStore.load().connection {
+            self.config = saved
+            self.useDemoBackend = false
+        }
+    }
 
     var isBusy: Bool {
         switch state {
@@ -45,13 +60,14 @@ final class ConnectionViewModel {
         state = .connecting
 
         let channel: any SysopChannel = useDemoBackend
-            ? InMemorySysopChannel(mode: mode, audit: audit, responder: { Self.demoResponder($0) })
-            : ProcessSysopChannel(config: config, mode: mode, audit: audit)
+            ? InMemorySysopChannel(mode: mode, audit: auditSink, responder: { Self.demoResponder($0) })
+            : ProcessSysopChannel(config: config, mode: mode, audit: auditSink)
         self.channel = channel
 
         do {
             try await channel.connect()
             append("✅ Verbunden via \(useDemoBackend ? "Demo" : "SSH") — Modus: \(modeLabel).")
+            if !useDemoBackend { saveSettings() }
         } catch {
             lastError = describe(error)
             append("⛔️ Verbindung fehlgeschlagen: \(describe(error))")
@@ -93,6 +109,16 @@ final class ConnectionViewModel {
 
     func clearConsole() {
         consoleLog = ""
+    }
+
+    /// Persist the current (non-secret) connection settings to the Documents folder.
+    func saveSettings() {
+        do {
+            try settingsStore.save(AppSettings(connection: config))
+            settingsMessage = "Gesichert in \(settingsStore.fileURL.path)"
+        } catch {
+            settingsMessage = "Sichern fehlgeschlagen: \(error.localizedDescription)"
+        }
     }
 
     // MARK: Helpers

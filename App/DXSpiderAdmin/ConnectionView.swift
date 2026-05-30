@@ -40,6 +40,20 @@ struct ConnectionView: View {
                     TextField("SSH-User", text: $model.config.user)
                     TextField("Port", value: $model.config.port, format: .number.grouping(.never))
                     TextField("console.pl-Pfad", text: $model.config.consolePath)
+                    HStack {
+                        Button("Einstellungen sichern", action: model.saveSettings)
+                            .disabled(!model.configValid)
+                        Spacer()
+                    }
+                    if let message = model.settingsMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                    Text("Keine Keys/Passwörter — SSH-Auth über ssh-agent/~/.ssh.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 .disabled(model.isConnected)
                 .textFieldStyle(.roundedBorder)
