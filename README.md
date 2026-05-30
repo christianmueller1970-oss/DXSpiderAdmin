@@ -26,7 +26,7 @@ Native macOS-App (SwiftUI) als grafische Schaltzentrale für den DXSpider-Cluste
 | **M2** | User/Node-Verwaltung: Parsen, Tabelle, Suchfilter, Aktionen mit Bestätigung & Rate-Limiting | ✅ |
 | **M3** | Command Builder inkl. Dry-Run-Preview | ✅ |
 | **M4** | Visueller Filter-Editor (`SpotFilter`) mit Befehls-Vorschau | ✅ |
-| **M5** | Polish & Distribution: Hardened Runtime, Developer-ID-Signierung, Notarisierung | ✅ Build-Setup |
+| **M5** | Polish & Distribution: Hardened Runtime, Developer-ID-Signierung, Notarisierung | ✅ |
 
 Offene Punkte: App-Icon (1024 px), Notarisierung mit Developer-ID-Account
 ([`docs/Distribution.md`](docs/Distribution.md)) und Live-Test gegen HB9HJI-2 (Erfassen echter
