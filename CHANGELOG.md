@@ -51,6 +51,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   freier Eingabe — jeweils mit **Dry-Run-Preview** des exakt erzeugten Befehls (§2),
   Bestätigung für destruktive Aktionen, Rufzeichen-Validierung und geteilter Konsolen-
   Ausgabe. Neuer Sidebar-Eintrag „Command Builder". 2 neue Unit-Tests (gesamt 35, grün).
+- M4 (Visueller Filter-Editor): `SpotFilter` (Core) komponiert die DXSpider-Filterregel aus
+  Aktion (accept/reject), Slot, Bändern (HF/VHF/UHF → `on …`), Spotter (`by`) und Origin —
+  inkl. `command`/`clearCommand` und Token-Parser; die (laut §10 noch zu verifizierende)
+  Syntax liegt damit an einer getesteten Stelle. App: `FilterEditorView` mit Band-Checkboxen,
+  Stationsfeldern, Live-Befehls-Vorschau und Anwenden/Leeren (destruktiv → Bestätigung).
+  Neuer Sidebar-Eintrag „Filter-Editor". 6 neue Unit-Tests (gesamt 41, grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
