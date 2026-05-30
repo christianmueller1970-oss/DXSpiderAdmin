@@ -16,6 +16,7 @@ public enum DXCommand: Equatable, Sendable {
     case setNode(callsign: String)
     case boot(callsign: String)
     case setRegister(callsign: String)
+    case unsetRegister(callsign: String)
 
     // Spot filters
     case acceptSpots(slot: Int, rule: String)
@@ -44,6 +45,8 @@ public enum DXCommand: Equatable, Sendable {
             return "boot \(Self.normalize(callsign))"
         case .setRegister(let callsign):
             return "set/register \(Self.normalize(callsign))"
+        case .unsetRegister(let callsign):
+            return "unset/register \(Self.normalize(callsign))"
         case .acceptSpots(let slot, let rule):
             return "accept/spots \(slot) \(rule)"
         case .rejectSpots(let slot, let rule):
@@ -60,7 +63,7 @@ public enum DXCommand: Equatable, Sendable {
         switch self {
         case .showUsers, .showNodes, .showConfiguration, .showRoute:
             return false
-        case .setPrivilege, .setNode, .boot, .setRegister,
+        case .setPrivilege, .setNode, .boot, .setRegister, .unsetRegister,
              .acceptSpots, .rejectSpots, .clearSpots:
             return true
         case .raw:

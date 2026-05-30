@@ -19,6 +19,8 @@ struct ContentView: View {
                 ConnectionView(model: connection)
             case .users:
                 ManagementView(model: connection)
+            case .commands:
+                CommandBuilderView(model: connection)
             }
         }
     }
@@ -27,6 +29,7 @@ struct ContentView: View {
 enum SidebarItem: String, CaseIterable, Identifiable {
     case connection
     case users
+    case commands
 
     var id: String { rawValue }
 
@@ -34,6 +37,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .connection: "Verbindung"
         case .users: "User & Nodes"
+        case .commands: "Command Builder"
         }
     }
 
@@ -41,6 +45,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .connection: "antenna.radiowaves.left.and.right"
         case .users: "person.2"
+        case .commands: "hammer"
         }
     }
 }

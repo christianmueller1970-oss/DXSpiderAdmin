@@ -45,6 +45,12 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   destruktiven Aktionen nur im Schreibmodus und mit Bestätigungsdialog. `ConnectionViewModel`
   um `users`/`nodes`, Filter, `refreshAll`/`refreshUsers`/`refreshNodes` und einen
   rate-limitierten `dispatch`-Pfad erweitert. 3 neue Unit-Tests (gesamt 33, grün).
+- M3 (Command Builder): `DXCommand` um `unsetRegister` (Register-Toggle) erweitert.
+  App: `CommandBuilderView` mit Eingabemasken für Registrierung (`set/register`/
+  `unset/register`), read-only-Abfragen (`show/configuration`, `show/route <call>`) und
+  freier Eingabe — jeweils mit **Dry-Run-Preview** des exakt erzeugten Befehls (§2),
+  Bestätigung für destruktive Aktionen, Rufzeichen-Validierung und geteilter Konsolen-
+  Ausgabe. Neuer Sidebar-Eintrag „Command Builder". 2 neue Unit-Tests (gesamt 35, grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
