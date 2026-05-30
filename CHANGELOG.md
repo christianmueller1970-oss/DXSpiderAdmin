@@ -38,6 +38,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   `CompositeAuditSink` (Fan-out In-Memory + Datei). App lädt Settings beim Start, sichert sie
   beim SSH-Verbinden bzw. per Button und schreibt jede Befehlszeile zusätzlich in die
   Audit-Datei. 5 neue Unit-Tests (gesamt 30, grün).
+- M2 (User- & Node-Verwaltung, MVP): geteiltes `Callsign`-Util, `ShowNodesParser`
+  (tolerant, `show/nodes` → `[ClusterNode]` mit Verbindungs-Heuristik) und `RateLimiter`
+  (Mindest-Abstand zwischen Befehlen, deterministisch testbar). App: `ManagementView` mit
+  User-/Node-Listen, Suchfilter (`searchable`), Privilege-Menü und „Station trennen" — alle
+  destruktiven Aktionen nur im Schreibmodus und mit Bestätigungsdialog. `ConnectionViewModel`
+  um `users`/`nodes`, Filter, `refreshAll`/`refreshUsers`/`refreshNodes` und einen
+  rate-limitierten `dispatch`-Pfad erweitert. 3 neue Unit-Tests (gesamt 33, grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.

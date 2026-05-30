@@ -18,11 +18,7 @@ struct ContentView: View {
             case .connection:
                 ConnectionView(model: connection)
             case .users:
-                ContentUnavailableView(
-                    "User- & Node-Verwaltung",
-                    systemImage: "person.2",
-                    description: Text("Kommt in Meilenstein M2.")
-                )
+                ManagementView(model: connection)
             }
         }
     }

@@ -24,10 +24,18 @@ final class ConnectionViewModel {
     private(set) var settingsMessage: String?
     var commandText: String = ""
 
+    // MARK: User & Node management (M2)
+    private(set) var users: [ClusterUser] = []
+    private(set) var nodes: [ClusterNode] = []
+    private(set) var isRefreshing = false
+    var userSearch = ""
+    var nodeSearch = ""
+
     private var channel: (any SysopChannel)?
     private let audit = InMemoryAuditLog()
     private let settingsStore: SettingsStore
     private let auditSink: any AuditSink
+    private var rateLimiter = RateLimiter(minimumInterval: 0.75)
 
     init(settingsStore: SettingsStore = .standard()) {
         self.settingsStore = settingsStore
@@ -50,6 +58,17 @@ final class ConnectionViewModel {
     var isConnected: Bool { state.canSendCommands }
     var configValid: Bool {
         !config.host.isEmpty && !config.user.isEmpty && !config.consolePath.isEmpty && config.port > 0
+    }
+
+    var filteredUsers: [ClusterUser] {
+        let query = userSearch.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return users }
+        return users.filter { $0.callsign.localizedCaseInsensitiveContains(query) }
+    }
+    var filteredNodes: [ClusterNode] {
+        let query = nodeSearch.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return nodes }
+        return nodes.filter { $0.callsign.localizedCaseInsensitiveContains(query) }
     }
 
     // MARK: Actions
@@ -80,15 +99,17 @@ final class ConnectionViewModel {
         await channel?.disconnect()
         channel = nil
         state = .disconnected
+        users = []
+        nodes = []
         append("Verbindung getrennt.")
     }
 
     func send(_ command: DXCommand) async {
-        guard let channel else { return }
+        guard channel != nil else { return }
         lastError = nil
         append("> \(command.line)")
         do {
-            let response = try await channel.send(command)
+            let response = try await dispatch(command)
             if !response.isEmpty { append(response) }
         } catch SysopChannelError.readOnly {
             lastError = "Im Read-only-Modus blockiert: \(command.line)"
@@ -107,6 +128,57 @@ final class ConnectionViewModel {
         await send(.raw(text))
     }
 
+    // MARK: User & Node management
+
+    func refreshAll() async {
+        await refreshUsers()
+        await refreshNodes()
+    }
+
+    func refreshUsers() async {
+        guard isConnected else { return }
+        isRefreshing = true
+        do {
+            let raw = try await dispatch(.showUsers)
+            users = ShowUsersParser().parse(raw).users
+        } catch {
+            lastError = describe(error)
+        }
+        isRefreshing = false
+        await syncState()
+    }
+
+    func refreshNodes() async {
+        guard isConnected else { return }
+        isRefreshing = true
+        do {
+            let raw = try await dispatch(.showNodes)
+            nodes = ShowNodesParser().parse(raw).nodes
+        } catch {
+            lastError = describe(error)
+        }
+        isRefreshing = false
+        await syncState()
+    }
+
+    /// Destructive: change a user's privilege level (requires write mode + confirmation in the UI).
+    func setPrivilege(_ level: PrivilegeLevel, for callsign: String) async {
+        await send(.setPrivilege(level: level, callsign: callsign))
+        await refreshUsers()
+    }
+
+    /// Destructive: disconnect ("boot") a station.
+    func boot(_ callsign: String) async {
+        await send(.boot(callsign: callsign))
+        await refreshUsers()
+    }
+
+    /// Destructive: mark a callsign as a node partner.
+    func markAsNode(_ callsign: String) async {
+        await send(.setNode(callsign: callsign))
+        await refreshNodes()
+    }
+
     func clearConsole() {
         consoleLog = ""
     }
@@ -122,6 +194,16 @@ final class ConnectionViewModel {
     }
 
     // MARK: Helpers
+
+    /// Single send path: paces commands via the rate limiter (Konzeptdokument §2), then
+    /// forwards to the channel. Returns the node's response.
+    private func dispatch(_ command: DXCommand) async throws -> String {
+        guard let channel else { throw SysopChannelError.notConnected }
+        let delay = rateLimiter.retryDelay(at: Date())
+        if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+        rateLimiter.record(at: Date())
+        return try await channel.send(command)
+    }
 
     private var modeLabel: String { allowWrites ? "Schreiben erlaubt" : "Read-only" }
 
@@ -152,9 +234,14 @@ final class ConnectionViewModel {
     nonisolated static func demoResponder(_ command: DXCommand) -> String {
         switch command {
         case .showUsers:
-            return "DL1ABC   W1AW    HB9XYZ   G3PLX   OE1ABC"
+            return "DL1ABC   W1AW    HB9XYZ   G3PLX   OE1ABC   DK7ZB   F5XYZ"
         case .showNodes:
-            return "HB9HJI-2   GB7DXC   W1NODE   DK0WCY"
+            return """
+            GB7DXC    connected     DXSpider v1.57
+            W1NODE    connected
+            DK0WCY    disconnected
+            HB9HJI-2  connected
+            """
         case .showConfiguration:
             return "DXSpider V1.57 build 0.x — demo node HB9HJI-2"
         default:
