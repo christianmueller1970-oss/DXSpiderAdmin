@@ -31,8 +31,8 @@ struct Capture {
             ?? SettingsStore.standard().directory.appendingPathComponent("fixtures", isDirectory: true)
         try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
-        print("Verbinde mit \(config.user)@\(config.host):\(config.port) (read-only) …")
-        let channel = ProcessSysopChannel(config: config, mode: .readOnly)
+        print("Verbinde mit \(config.user)@\(config.host):\(config.port) (read-only, Console-Socket) …")
+        let channel = ConsoleSocketChannel(config: config, mode: .readOnly)
 
         do {
             try await channel.connect()
@@ -61,7 +61,7 @@ struct Capture {
     private static func capture(
         _ command: DXCommand,
         label: String,
-        from channel: ProcessSysopChannel,
+        from channel: ConsoleSocketChannel,
         outDir: URL
     ) async {
         do {
@@ -88,7 +88,10 @@ struct Capture {
         }
         let console = args.console ?? saved?.consolePath ?? "/spider/perl/console.pl"
         let port = args.port ?? saved?.port ?? 22
-        return SSHConnectionConfig(host: host, user: user, port: port, consolePath: console)
+        let sysopCall = args.call ?? saved?.sysopCall
+        return SSHConnectionConfig(
+            host: host, user: user, port: port, consolePath: console, sysopCall: sysopCall
+        )
     }
 
     private static func printUsage() {
@@ -113,6 +116,7 @@ private struct Arguments {
     var user: String?
     var console: String?
     var route: String?
+    var call: String?
     var port: Int?
     var outDir: URL?
     var help = false
@@ -126,6 +130,7 @@ private struct Arguments {
             case "--user": user = iterator.next()
             case "--console": console = iterator.next()
             case "--route": route = iterator.next()
+            case "--call": call = iterator.next()
             case "--port": port = iterator.next().flatMap(Int.init)
             case "--out": outDir = iterator.next().map { URL(fileURLWithPath: $0, isDirectory: true) }
             default: break

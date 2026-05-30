@@ -28,7 +28,7 @@ struct ConnectionView: View {
             Section("Backend") {
                 Picker("Quelle", selection: $model.useDemoBackend) {
                     Text("Demo (ohne Server)").tag(true)
-                    Text("SSH + console.pl").tag(false)
+                    Text("SSH (Console-Socket)").tag(false)
                 }
                 .pickerStyle(.radioGroup)
                 .disabled(model.isConnected)
@@ -39,7 +39,10 @@ struct ConnectionView: View {
                     TextField("Host", text: $model.config.host)
                     TextField("SSH-User", text: $model.config.user)
                     TextField("Port", value: $model.config.port, format: .number.grouping(.never))
-                    TextField("console.pl-Pfad", text: $model.config.consolePath)
+                    TextField("Sysop-Rufzeichen", text: Binding(
+                        get: { model.config.sysopCall ?? "" },
+                        set: { model.config.sysopCall = $0.isEmpty ? nil : $0 }
+                    ))
                     HStack {
                         Button("Einstellungen sichern", action: model.saveSettings)
                             .disabled(!model.configValid)

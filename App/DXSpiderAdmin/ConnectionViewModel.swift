@@ -57,7 +57,8 @@ final class ConnectionViewModel {
     }
     var isConnected: Bool { state.canSendCommands }
     var configValid: Bool {
-        !config.host.isEmpty && !config.user.isEmpty && !config.consolePath.isEmpty && config.port > 0
+        !config.host.isEmpty && !config.user.isEmpty && config.port > 0
+            && !(config.sysopCall ?? "").isEmpty
     }
 
     var filteredUsers: [ClusterUser] {
@@ -80,7 +81,7 @@ final class ConnectionViewModel {
 
         let channel: any SysopChannel = useDemoBackend
             ? InMemorySysopChannel(mode: mode, audit: auditSink, responder: { Self.demoResponder($0) })
-            : ProcessSysopChannel(config: config, mode: mode, audit: auditSink)
+            : ConsoleSocketChannel(config: config, mode: mode, audit: auditSink)
         self.channel = channel
 
         do {

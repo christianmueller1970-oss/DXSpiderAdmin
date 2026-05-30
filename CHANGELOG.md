@@ -73,6 +73,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   `A<call>|…`, Befehl `I<call>|…` und Antworten `<sort><call>|<zeile>` (`D`=Ausgabe inkl.
   bestätigtem Prompt-Format, `X`=Spot-Broadcast, `Z`=Ende). Sysop-Rechte ohne Challenge.
   → Transport-Layer wird darauf umgestellt (nächster Schritt); `PromptDetector` passt bereits.
+- `ConsoleSocketChannel` (neuer, echter Transport): spricht das Console-Socket-Protokoll über
+  eine SSH+Perl-Bridge (`A<call>|…` Attach, `I<call>|…` Befehle), parst `<sort><call>|<zeile>`
+  via `ConsoleProtocol`/`ConsoleMessage` (nur `D` als Antwort, `X`/`Z` separat), nutzt
+  `ResponseAccumulator`/`PromptDetector`/`ChannelMode`/Audit weiter. App-Backend „SSH
+  (Console-Socket)" + `dxspider-capture` umgestellt; Verbindungs-UI mit Sysop-Rufzeichen-Feld.
+  **Live gegen HB9HJI-2 verifiziert** (volle Sysop-Konsole, `show/configuration`/`show/users`/
+  `show/route`). 6 neue Unit-Tests (`ConsoleProtocol`), gesamt 47 grün.
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
