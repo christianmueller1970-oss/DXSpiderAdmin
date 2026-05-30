@@ -19,9 +19,12 @@ public struct ShowNodesParser: Sendable {
         var nodes: [ClusterNode] = []
 
         for line in raw.split(whereSeparator: \.isNewline) {
-            let lower = line.lowercased()
-            let connected = (lower.contains("connected") && !lower.contains("disconnected"))
-                || lower.contains("online")
+            // `show/configuration/nodes` wraps each node's user list onto indented
+            // continuation lines — skip those so users aren't mistaken for nodes.
+            if line.first?.isWhitespace == true { continue }
+
+            // Treat a node as connected unless it is explicitly marked disconnected.
+            let connected = !line.lowercased().contains("disconnected")
 
             // The first callsign-shaped token on the line is the node itself.
             for token in line.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "," }) {

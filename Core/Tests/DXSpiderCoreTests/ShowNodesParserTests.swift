@@ -20,6 +20,22 @@ final class ShowNodesParserTests: XCTestCase {
         XCTAssertTrue(result.nodes.first(where: { $0.callsign == "DK0WCY" })?.isConnected == true)
         XCTAssertEqual(result.rawText, raw)
     }
+
+    /// Real `show/configuration/nodes` format (anonymised): a Node/Callsigns table where each
+    /// node's user list wraps onto indented continuation lines.
+    func testParsesConfigurationNodesTable() {
+        let raw = """
+        Node         Callsigns
+        DA0BCC-7     9M2PJU-2     K5XYZ
+                     CQ0PCR-6     CS0RCL-6
+        HB9HJI-2     HB9HJI-2
+        HB9ON-8      JA1XYZ-7     9A0XYZ
+        """
+        let nodes = ShowNodesParser().parse(raw).nodes
+        XCTAssertEqual(nodes.map(\.callsign), ["DA0BCC-7", "HB9HJI-2", "HB9ON-8"],
+                       "only first column = nodes; indented continuation lines skipped")
+        XCTAssertTrue(nodes.allSatisfy(\.isConnected))
+    }
 }
 
 final class RateLimiterTests: XCTestCase {

@@ -32,7 +32,9 @@ public enum DXCommand: Equatable, Sendable {
         case .showUsers:
             return "show/users"
         case .showNodes:
-            return "show/nodes"
+            // Real DXSpider has no "show/nodes"; the node list comes from this command
+            // (verified live against HB9HJI-2 — see docs/NodeProtocol.md).
+            return "show/configuration/nodes"
         case .showConfiguration:
             return "show/configuration"
         case .showRoute(let callsign):

@@ -4,7 +4,7 @@ import XCTest
 final class DXCommandTests: XCTestCase {
     func testReadOnlyCommandLines() {
         XCTAssertEqual(DXCommand.showUsers.line, "show/users")
-        XCTAssertEqual(DXCommand.showNodes.line, "show/nodes")
+        XCTAssertEqual(DXCommand.showNodes.line, "show/configuration/nodes")
         XCTAssertEqual(DXCommand.showConfiguration.line, "show/configuration")
         XCTAssertEqual(DXCommand.showRoute(callsign: "hb9hji").line, "show/route HB9HJI")
     }

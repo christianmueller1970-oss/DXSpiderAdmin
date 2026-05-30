@@ -20,6 +20,12 @@ public struct ShowUsersParser: Sendable {
         var users: [ClusterUser] = []
 
         for line in raw.split(whereSeparator: \.isNewline) {
+            // Skip the console header "Callsigns connected to <NODE>" so the node's own
+            // callsign isn't counted as a user (real format — see docs/NodeProtocol.md).
+            if String(line).trimmingCharacters(in: .whitespaces)
+                .lowercased().hasPrefix("callsigns connected to") {
+                continue
+            }
             let tokens = line.split { $0 == " " || $0 == "\t" || $0 == "," }
             for token in tokens {
                 let candidate = String(token).uppercased()

@@ -80,6 +80,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   (Console-Socket)" + `dxspider-capture` umgestellt; Verbindungs-UI mit Sysop-Rufzeichen-Feld.
   **Live gegen HB9HJI-2 verifiziert** (volle Sysop-Konsole, `show/configuration`/`show/users`/
   `show/route`). 6 neue Unit-Tests (`ConsoleProtocol`), gesamt 47 grün.
+- Kommando-/Parser-Anpassung an echtes DXSpider (Live-Befunde): `DXCommand.showNodes` von
+  ungültigem `show/nodes` auf **`show/configuration/nodes`** korrigiert. `ShowNodesParser`
+  überspringt eingerückte Fortsetzungszeilen (User-Listen) und wertet Nodes als verbunden,
+  sofern nicht „disconnected". `ShowUsersParser` überspringt die Kopfzeile „Callsigns
+  connected to <NODE>". Live verifiziert (Node-Tabelle), 2 neue Tests (gesamt 49 grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.

@@ -22,6 +22,18 @@ final class ShowUsersParserTests: XCTestCase {
         XCTAssertEqual(result.rawText, raw)
     }
 
+    func testSkipsConsoleHeader() {
+        // Real console `show/users`: header line + one callsign per line.
+        let raw = """
+        Callsigns connected to HB9HJI-2
+        HB9HJI
+        DL1ABC
+        """
+        let calls = ShowUsersParser().parse(raw).users.map(\.callsign)
+        XCTAssertEqual(calls, ["HB9HJI", "DL1ABC"])
+        XCTAssertFalse(calls.contains("HB9HJI-2"), "the node call in the header must not be a user")
+    }
+
     func testCallsignHeuristic() {
         XCTAssertTrue(ShowUsersParser.isLikelyCallsign("HB9HJI"))
         XCTAssertTrue(ShowUsersParser.isLikelyCallsign("W1AW"))
