@@ -25,6 +25,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   `ResponseAccumulator`/`PromptDetector`, setzt `ChannelMode`-Guard + Audit + Timeouts durch,
   beendet den Prozess sauber. Key-Auth bleibt vollständig beim System (`ssh-agent`/`~/.ssh`).
   5 neue Unit-Tests (gesamt 25, grün).
+- M1 (App-Target): Xcode-Projekt `App/DXSpiderAdmin.xcodeproj` (macOS 26, SwiftUI,
+  Synchronized-Groups-Format, lokales Package `../Core`). Erste UI nach Konzeptdokument §6
+  „Verbindung": `DXSpiderAdminApp`, `ContentView` (Sidebar Verbindung/User), MVVM-
+  `ConnectionViewModel` (`@Observable`, Demo- & SSH-Backend, Read-only-Schalter, Status,
+  Audit-Log) und `ConnectionView` (Node-Felder, Konsole, manuelles Befehls-Senden,
+  Status-Badge). Demo-Backend macht die App ohne Server bedienbar. Baut grün via
+  `xcodebuild` (ad-hoc-signiert, lauffähig).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
@@ -32,3 +39,6 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - MVP: Verbindungs-Layer + User/Node-Verwaltung.
 - Harte Regel: keine Secrets/Einstellungen im Programm oder in Git; Settings ggf. lokal
   im Dokumente-Ordner.
+- App-Target vorerst **ohne App-Sandbox & ohne Hardened Runtime**, damit der
+  `/usr/bin/ssh`-Subprozess in der Entwicklung funktioniert. Sandbox/Entitlements und
+  Notarisierung werden in M5 entschieden (vgl. Konzeptdokument §9/§10).
