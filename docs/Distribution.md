@@ -58,7 +58,17 @@ TEAM_ID=DEINETEAMID NOTARY_PROFILE=DXSpiderAdmin-Notary ./scripts/notarize.sh
 
 Das Skript archiviert (Release, Hardened Runtime), exportiert mit Developer-ID-Signatur,
 reicht das ZIP bei Apple ein (`--wait`) und heftet das Ticket an (`stapler staple`).
-Ergebnis: `build/export/DXSpiderAdmin.app` — verteilbar (optional als DMG verpacken).
+Ergebnis: `build/export/DXSpiderAdmin.app` — verteilbar.
+
+## DMG bauen (optional, zum Weitergeben)
+
+Nach `notarize.sh`:
+```sh
+NOTARY_PROFILE=DXSpiderAdmin-Notary ./scripts/build-dmg.sh
+```
+Erzeugt `build/DXSpiderAdmin-<version>.dmg` mit „nach Programme ziehen"-Layout, signiert
+sie mit Developer ID, notarisiert und stapelt das Ticket. Ergebnis ist Gatekeeper-konform
+weitergebbar (auch offline).
 
 ## Prüfen
 

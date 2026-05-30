@@ -93,6 +93,9 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Hardened Runtime, Apple-Notarisierung „Accepted", Ticket gestapelt, `spctl` „accepted —
   source=Notarized Developer ID". Die App ist damit weitergebbar (Gatekeeper-konform).
   `.gitignore` schützt zusätzlich `*.p8`/`AuthKey_*`.
+- `scripts/build-dmg.sh`: baut aus der notarisierten App eine DMG („nach Programme ziehen"),
+  signiert sie mit Developer ID, notarisiert und stapelt sie. Ergebnis live erzeugt:
+  `DXSpiderAdmin-0.1.dmg` (Notarisierung „Accepted", `spctl` akzeptiert, Gatekeeper-konform).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
