@@ -10,6 +10,7 @@ public enum DXCommand: Equatable, Sendable {
     case showNodes
     case showConfiguration
     case showRoute(callsign: String)
+    case showRegistered
 
     // Mutating / administrative
     case setPrivilege(level: PrivilegeLevel, callsign: String)
@@ -39,6 +40,10 @@ public enum DXCommand: Equatable, Sendable {
             return "show/configuration"
         case .showRoute(let callsign):
             return "show/route \(Self.normalize(callsign))"
+        case .showRegistered:
+            // Lists all registered users (verified against HB9HJI-2: command is
+            // "show/registered" with the "ed", unlike set/register & unset/register).
+            return "show/registered"
         case .setPrivilege(let level, let callsign):
             return "set/priv \(level.rawValue) \(Self.normalize(callsign))"
         case .setNode(let callsign):
@@ -63,7 +68,7 @@ public enum DXCommand: Equatable, Sendable {
     /// Whether this command changes state and should require explicit confirmation.
     public var isDestructive: Bool {
         switch self {
-        case .showUsers, .showNodes, .showConfiguration, .showRoute:
+        case .showUsers, .showNodes, .showConfiguration, .showRoute, .showRegistered:
             return false
         case .setPrivilege, .setNode, .boot, .setRegister, .unsetRegister,
              .acceptSpots, .rejectSpots, .clearSpots:

@@ -67,6 +67,10 @@ struct CommandBuilderView: View {
                     Button("Aufheben", role: .destructive) { pending = .unsetRegister(callsign: registerCall) }
                         .disabled(!model.allowWrites || !registerCall.isValidCallsign)
                 }
+                // show/registered ist read-only (kein Schreibrecht nötig) → direkt senden, keine Bestätigung.
+                Button("Registrierte anzeigen") {
+                    Task { await model.send(.showRegistered) }
+                }
             }
 
             Section("Abfragen (read-only)") {

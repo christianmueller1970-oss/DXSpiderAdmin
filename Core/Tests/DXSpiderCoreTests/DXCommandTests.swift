@@ -32,6 +32,13 @@ final class DXCommandTests: XCTestCase {
         XCTAssertTrue(DXCommand.showRoute(callsign: "W1AW").isReadOnly)
     }
 
+    func testShowRegisteredLine() {
+        // Note the trailing "ed": listing is "show/registered", while set/unset use "register".
+        XCTAssertEqual(DXCommand.showRegistered.line, "show/registered")
+        XCTAssertTrue(DXCommand.showRegistered.isReadOnly)
+        XCTAssertFalse(DXCommand.showRegistered.isDestructive)
+    }
+
     func testDestructiveFlags() {
         XCTAssertFalse(DXCommand.showUsers.isDestructive)
         XCTAssertTrue(DXCommand.showUsers.isReadOnly)

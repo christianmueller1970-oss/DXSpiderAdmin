@@ -96,6 +96,11 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - `scripts/build-dmg.sh`: baut aus der notarisierten App eine DMG („nach Programme ziehen"),
   signiert sie mit Developer ID, notarisiert und stapelt sie. Ergebnis live erzeugt:
   `DXSpiderAdmin-0.1.dmg` (Notarisierung „Accepted", `spctl` akzeptiert, Gatekeeper-konform).
+- Registrierung anzeigen: read-only `DXCommand.showRegistered` → `show/registered` (am
+  Node-Quellcode verifiziert — Anzeige heißt `registered` mit „ed", anders als die
+  schreibenden `set/register`/`unset/register`). Neuer Button „Registrierte anzeigen" in der
+  Sektion „Registrierung" des `CommandBuilderView` (read-only, daher ohne Bestätigung). 1
+  neuer Unit-Test (gesamt 50 grün).
 
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
