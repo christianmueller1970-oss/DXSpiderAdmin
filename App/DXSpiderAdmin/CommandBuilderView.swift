@@ -6,7 +6,9 @@ import DXSpiderCore
 /// und Bestätigung für destruktive Aktionen. Ergebnisse erscheinen in der geteilten Konsole.
 struct CommandBuilderView: View {
     @Bindable var model: ConnectionViewModel
-    @State private var registerCall = ""
+    @State private var registerCalls = ""
+    @State private var registeredFilter = ""
+    @State private var badSpotterCalls = ""
     @State private var routeCall = ""
     @State private var rawText = ""
     @State private var pending: DXCommand?
@@ -58,18 +60,40 @@ struct CommandBuilderView: View {
             }
 
             Section("Registrierung") {
-                TextField("Rufzeichen", text: $registerCall)
+                TextField("Rufzeichen (mehrere mit Leerzeichen)", text: $registerCalls)
                     .textFieldStyle(.roundedBorder)
-                PreviewLine(command: registerCall.isValidCallsign ? .setRegister(callsign: registerCall) : nil)
+                PreviewLine(command: registerList.isEmpty ? nil : .setRegister(callsigns: registerList))
                 HStack {
-                    Button("Registrieren") { pending = .setRegister(callsign: registerCall) }
-                        .disabled(!model.allowWrites || !registerCall.isValidCallsign)
-                    Button("Aufheben", role: .destructive) { pending = .unsetRegister(callsign: registerCall) }
-                        .disabled(!model.allowWrites || !registerCall.isValidCallsign)
+                    Button("Registrieren") { pending = .setRegister(callsigns: registerList) }
+                        .disabled(!model.allowWrites || !registerCallsValid)
+                    Button("Aufheben", role: .destructive) { pending = .unsetRegister(callsigns: registerList) }
+                        .disabled(!model.allowWrites || !registerCallsValid)
                 }
-                // show/registered ist read-only (kein Schreibrecht nötig) → direkt senden, keine Bestätigung.
-                Button("Registrierte anzeigen") {
-                    Task { await model.send(.showRegistered) }
+                // show/registered ist read-only → direkt senden, keine Bestätigung.
+                // Der Node unterstützt hier keine Wildcards/Mehrfach-Calls (Leerzeichen & '*'
+                // werden gestrippt); leer = alle, ein exaktes Rufzeichen = genau dieses prüfen.
+                HStack {
+                    TextField("Einzelnes Rufzeichen prüfen (optional)", text: $registeredFilter)
+                        .textFieldStyle(.roundedBorder)
+                    Button("Registrierte anzeigen") {
+                        Task { await model.send(.showRegistered(call: optional(registeredFilter))) }
+                    }
+                }
+            }
+
+            Section("Bad Spotter") {
+                TextField("Rufzeichen (mehrere mit Leerzeichen)", text: $badSpotterCalls)
+                    .textFieldStyle(.roundedBorder)
+                PreviewLine(command: badSpotterList.isEmpty ? nil : .setBadSpotter(callsigns: badSpotterList))
+                HStack {
+                    Button("Sperren", role: .destructive) { pending = .setBadSpotter(callsigns: badSpotterList) }
+                        .disabled(!model.allowWrites || !badSpotterCallsValid)
+                    Button("Freigeben") { pending = .unsetBadSpotter(callsigns: badSpotterList) }
+                        .disabled(!model.allowWrites || !badSpotterCallsValid)
+                }
+                // show/badspotter ist read-only und ignoriert Argumente (listet immer alle).
+                Button("Bad Spotter anzeigen") {
+                    Task { await model.send(.showBadSpotter) }
                 }
             }
 
@@ -133,6 +157,30 @@ struct CommandBuilderView: View {
 
     private var rawTextTrimmed: String {
         rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Normalised, non-empty callsigns parsed from a space-separated field.
+    private var registerList: [String] { Self.callList(registerCalls) }
+    private var badSpotterList: [String] { Self.callList(badSpotterCalls) }
+    /// At least one token and every token looks like a callsign.
+    private var registerCallsValid: Bool { Self.allValidCallsigns(registerCalls) }
+    private var badSpotterCallsValid: Bool { Self.allValidCallsigns(badSpotterCalls) }
+
+    /// Trimmed text, or `nil` when empty — used for optional `show/…` filters.
+    private func optional(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    static func callList(_ text: String) -> [String] {
+        text.split(whereSeparator: \.isWhitespace)
+            .map { Callsign.normalize(String($0)) }
+            .filter { !$0.isEmpty }
+    }
+
+    static func allValidCallsigns(_ text: String) -> Bool {
+        let list = callList(text)
+        return !list.isEmpty && list.allSatisfy { Callsign.isLikely($0) }
     }
 
     /// Raw commands have unknown intent and are treated as destructive → confirm first.

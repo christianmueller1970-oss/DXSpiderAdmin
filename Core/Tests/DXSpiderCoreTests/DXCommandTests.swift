@@ -19,10 +19,29 @@ final class DXCommandTests: XCTestCase {
     }
 
     func testRegistrationLines() {
-        XCTAssertEqual(DXCommand.setRegister(callsign: "hb9xyz").line, "set/register HB9XYZ")
-        XCTAssertEqual(DXCommand.unsetRegister(callsign: " dl1abc ").line, "unset/register DL1ABC")
-        XCTAssertTrue(DXCommand.setRegister(callsign: "HB9XYZ").isDestructive)
-        XCTAssertTrue(DXCommand.unsetRegister(callsign: "HB9XYZ").isDestructive)
+        XCTAssertEqual(DXCommand.setRegister(callsigns: ["hb9xyz"]).line, "set/register HB9XYZ")
+        XCTAssertEqual(DXCommand.unsetRegister(callsigns: [" dl1abc "]).line, "unset/register DL1ABC")
+        XCTAssertTrue(DXCommand.setRegister(callsigns: ["HB9XYZ"]).isDestructive)
+        XCTAssertTrue(DXCommand.unsetRegister(callsigns: ["HB9XYZ"]).isDestructive)
+    }
+
+    func testRegistrationMultipleCallsigns() {
+        XCTAssertEqual(
+            DXCommand.setRegister(callsigns: ["hb9a", "HB9B", " dl1abc "]).line,
+            "set/register HB9A HB9B DL1ABC"
+        )
+        // Blank tokens are dropped.
+        XCTAssertEqual(DXCommand.setRegister(callsigns: ["hb9a", "  "]).line, "set/register HB9A")
+    }
+
+    func testBadSpotterLines() {
+        XCTAssertEqual(DXCommand.setBadSpotter(callsigns: ["n0call", "W1AW"]).line, "set/badspotter N0CALL W1AW")
+        XCTAssertEqual(DXCommand.unsetBadSpotter(callsigns: ["w1aw"]).line, "unset/badspotter W1AW")
+        XCTAssertTrue(DXCommand.setBadSpotter(callsigns: ["W1AW"]).isDestructive)
+        XCTAssertTrue(DXCommand.unsetBadSpotter(callsigns: ["W1AW"]).isDestructive)
+        // Node ignores any argument and always lists all → no-arg command.
+        XCTAssertEqual(DXCommand.showBadSpotter.line, "show/badspotter")
+        XCTAssertTrue(DXCommand.showBadSpotter.isReadOnly)
     }
 
     func testQueryLines() {
@@ -34,9 +53,11 @@ final class DXCommandTests: XCTestCase {
 
     func testShowRegisteredLine() {
         // Note the trailing "ed": listing is "show/registered", while set/unset use "register".
-        XCTAssertEqual(DXCommand.showRegistered.line, "show/registered")
-        XCTAssertTrue(DXCommand.showRegistered.isReadOnly)
-        XCTAssertFalse(DXCommand.showRegistered.isDestructive)
+        XCTAssertEqual(DXCommand.showRegistered(call: nil).line, "show/registered")
+        XCTAssertEqual(DXCommand.showRegistered(call: "hb9tac").line, "show/registered HB9TAC")
+        XCTAssertEqual(DXCommand.showRegistered(call: "  ").line, "show/registered", "blank call is ignored")
+        XCTAssertTrue(DXCommand.showRegistered(call: nil).isReadOnly)
+        XCTAssertFalse(DXCommand.showRegistered(call: "HB9TAC").isDestructive)
     }
 
     func testDestructiveFlags() {

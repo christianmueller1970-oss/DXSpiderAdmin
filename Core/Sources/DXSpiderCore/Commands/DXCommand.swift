@@ -10,14 +10,19 @@ public enum DXCommand: Equatable, Sendable {
     case showNodes
     case showConfiguration
     case showRoute(callsign: String)
-    case showRegistered
+    /// Optional single exact callsign — the node strips spaces/`*`, so wildcards and
+    /// multiple calls do NOT work here (verified live); nil lists all registered users.
+    case showRegistered(call: String?)
+    case showBadSpotter
 
     // Mutating / administrative
     case setPrivilege(level: PrivilegeLevel, callsign: String)
     case setNode(callsign: String)
     case boot(callsign: String)
-    case setRegister(callsign: String)
-    case unsetRegister(callsign: String)
+    case setRegister(callsigns: [String])
+    case unsetRegister(callsigns: [String])
+    case setBadSpotter(callsigns: [String])
+    case unsetBadSpotter(callsigns: [String])
 
     // Spot filters
     case acceptSpots(slot: Int, rule: String)
@@ -40,20 +45,28 @@ public enum DXCommand: Equatable, Sendable {
             return "show/configuration"
         case .showRoute(let callsign):
             return "show/route \(Self.normalize(callsign))"
-        case .showRegistered:
-            // Lists all registered users (verified against HB9HJI-2: command is
-            // "show/registered" with the "ed", unlike set/register & unset/register).
-            return "show/registered"
+        case .showRegistered(let call):
+            // "show/registered" (the "ed" form, unlike set/register & unset/register).
+            // With a single exact call it checks just that one; nil lists all.
+            return Self.showLine("show/registered", call)
+        case .showBadSpotter:
+            // The node ignores any argument here and always lists the full set.
+            return "show/badspotter"
         case .setPrivilege(let level, let callsign):
             return "set/priv \(level.rawValue) \(Self.normalize(callsign))"
         case .setNode(let callsign):
             return "set/node \(Self.normalize(callsign))"
         case .boot(let callsign):
             return "boot \(Self.normalize(callsign))"
-        case .setRegister(let callsign):
-            return "set/register \(Self.normalize(callsign))"
-        case .unsetRegister(let callsign):
-            return "unset/register \(Self.normalize(callsign))"
+        case .setRegister(let callsigns):
+            return "set/register \(Self.normalizeList(callsigns))"
+        case .unsetRegister(let callsigns):
+            return "unset/register \(Self.normalizeList(callsigns))"
+        case .setBadSpotter(let callsigns):
+            // Node strips SSIDs itself; we just pass the (normalised) calls. Priv ≥ 6.
+            return "set/badspotter \(Self.normalizeList(callsigns))"
+        case .unsetBadSpotter(let callsigns):
+            return "unset/badspotter \(Self.normalizeList(callsigns))"
         case .acceptSpots(let slot, let rule):
             return "accept/spots \(slot) \(rule)"
         case .rejectSpots(let slot, let rule):
@@ -68,9 +81,11 @@ public enum DXCommand: Equatable, Sendable {
     /// Whether this command changes state and should require explicit confirmation.
     public var isDestructive: Bool {
         switch self {
-        case .showUsers, .showNodes, .showConfiguration, .showRoute, .showRegistered:
+        case .showUsers, .showNodes, .showConfiguration, .showRoute,
+             .showRegistered, .showBadSpotter:
             return false
         case .setPrivilege, .setNode, .boot, .setRegister, .unsetRegister,
+             .setBadSpotter, .unsetBadSpotter,
              .acceptSpots, .rejectSpots, .clearSpots:
             return true
         case .raw:
@@ -84,5 +99,17 @@ public enum DXCommand: Equatable, Sendable {
 
     private static func normalize(_ callsign: String) -> String {
         callsign.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    }
+
+    /// Normalise and space-join multiple callsigns (e.g. "set/register HB9A HB9B").
+    private static func normalizeList(_ callsigns: [String]) -> String {
+        callsigns.map(normalize).filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
+    /// A `show/…` line with an optional trailing pattern (uppercased; wildcards allowed).
+    private static func showLine(_ base: String, _ pattern: String?) -> String {
+        guard let pattern = pattern?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+              !pattern.isEmpty else { return base }
+        return "\(base) \(pattern)"
     }
 }

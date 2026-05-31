@@ -102,6 +102,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Sektion „Registrierung" des `CommandBuilderView` (read-only, daher ohne Bestätigung). 1
   neuer Unit-Test (gesamt 50 grün).
 
+- Mehrfach-Registrierung & Bad-Spotter-Verwaltung im Command Builder: `set/register` und
+  `unset/register` nehmen jetzt **mehrere** Rufzeichen (Leerzeichen-getrennt); neue Befehle
+  `set/badspotter`/`unset/badspotter` (mehrere Calls, Node strippt SSID, priv ≥ 6) und
+  read-only `show/badspotter`. UI: Registrierungs-Sektion mit Mehrfach-Feld; neue Sektion
+  „Bad Spotter" (Sperren/Freigeben/Anzeigen). **Am Node-Quellcode verifiziert** (Live):
+  `show/registered <arg>` macht **kein** Wildcard-Matching — Leerzeichen und `*` werden
+  gestrippt, also nur *ein exaktes* Rufzeichen prüfbar (leer = alle); das Feld ist daher
+  „Einzelnes Rufzeichen prüfen". `show/badspotter` ignoriert Argumente und listet immer alle.
+  4 neue Unit-Tests (gesamt 54 grün).
+
 ### Fixed
 - Antwort-Framing für geforkte Befehle (`spawn_cmd`, z. B. `show/registered`): Diese drucken
   am Console-Socket den **Prompt vor dem Output**, wodurch der bisherige prompt-basierte
