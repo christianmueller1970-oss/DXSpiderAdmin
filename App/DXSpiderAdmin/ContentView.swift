@@ -29,6 +29,8 @@ struct ContentView: View {
                 ManagementView(model: connection)
             case .commands:
                 CommandBuilderView(model: connection)
+            case .blocklists:
+                BlockListsView(model: connection)
             case .filters:
                 FilterEditorView(model: connection)
             }
@@ -48,6 +50,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case connection
     case users
     case commands
+    case blocklists
     case filters
 
     var id: String { rawValue }
@@ -57,6 +60,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .connection: "Verbindung"
         case .users: "User & Nodes"
         case .commands: "Command Builder"
+        case .blocklists: "Sperrlisten"
         case .filters: "Filter-Editor"
         }
     }
@@ -66,6 +70,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .connection: "antenna.radiowaves.left.and.right"
         case .users: "person.2"
         case .commands: "hammer"
+        case .blocklists: "nosign"
         case .filters: "line.3.horizontal.decrease.circle"
         }
     }

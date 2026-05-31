@@ -123,6 +123,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Argument (`<call>|ALL`) → wir senden `show/lockout ALL`; die übrigen `show/bad…` ignorieren
   Argumente. 6 neue Unit-Tests (gesamt 59 grün).
 
+- Strukturierte, durchsuchbare Sperrlisten-Ansicht: neuer `ShowListParser` (Core) extrahiert
+  Einträge aus `show/badspotter|badnode|baddx|badword` und `show/lockout ALL` (Header/Counts/
+  Zahlen werden verworfen, dedupliziert). Neuer Sidebar-Bereich **„Sperrlisten"**
+  (`BlockListsView`) mit Listen-Auswahl (Segmented), Suchfeld und **„Entfernen" je Zeile**
+  (destruktiv → Bestätigung, sendet das passende `unset/…`). `ConnectionViewModel` um
+  `blockEntries`/`filteredBlockEntries`/`loadBlockList()`/`removeBlockEntry()` erweitert.
+  4 neue Unit-Tests (gesamt 63 grün).
+
 ### Fixed
 - Antwort-Framing für geforkte Befehle (`spawn_cmd`, z. B. `show/registered`): Diese drucken
   am Console-Socket den **Prompt vor dem Output**, wodurch der bisherige prompt-basierte

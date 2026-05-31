@@ -29,10 +29,12 @@ final class ConnectionViewModel {
     private(set) var nodes: [ClusterNode] = []
     private(set) var registered: [ClusterUser] = []
     private(set) var registrationRequired: Bool?
+    private(set) var blockEntries: [String] = []
     private(set) var isRefreshing = false
     var userSearch = ""
     var nodeSearch = ""
     var registeredSearch = ""
+    var blockSearch = ""
 
     private var channel: (any SysopChannel)?
     private let audit = InMemoryAuditLog()
@@ -80,6 +82,12 @@ final class ConnectionViewModel {
         guard !query.isEmpty else { return registered }
         return registered.filter { $0.callsign.localizedCaseInsensitiveContains(query) }
     }
+    /// Client-side filter over the currently loaded block list (bad spotter/node/dx/word, lockout).
+    var filteredBlockEntries: [String] {
+        let query = blockSearch.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return blockEntries }
+        return blockEntries.filter { $0.localizedCaseInsensitiveContains(query) }
+    }
 
     // MARK: Actions
 
@@ -113,6 +121,7 @@ final class ConnectionViewModel {
         nodes = []
         registered = []
         registrationRequired = nil
+        blockEntries = []
         append("Verbindung getrennt.")
     }
 
@@ -167,6 +176,27 @@ final class ConnectionViewModel {
     func unregister(_ callsign: String) async {
         await send(.unsetRegister(callsigns: [callsign]))
         await refreshRegistered()
+    }
+
+    /// Load one of the block lists (bad spotter/node/dx/word, lockout) into `blockEntries`.
+    func loadBlockList(_ show: DXCommand) async {
+        guard isConnected else { return }
+        blockEntries = []          // avoid showing the previous list's entries while loading
+        isRefreshing = true
+        do {
+            let raw = try await dispatch(show)
+            blockEntries = ShowListParser().parse(raw)
+        } catch {
+            lastError = describe(error)
+        }
+        isRefreshing = false
+        await syncState()
+    }
+
+    /// Destructive: remove one entry from a block list, then reload that list.
+    func removeBlockEntry(remove: DXCommand, reload: DXCommand) async {
+        await send(remove)
+        await loadBlockList(reload)
     }
 
     func refreshUsers() async {
