@@ -102,6 +102,15 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   Sektion „Registrierung" des `CommandBuilderView` (read-only, daher ohne Bestätigung). 1
   neuer Unit-Test (gesamt 50 grün).
 
+### Fixed
+- Antwort-Framing für geforkte Befehle (`spawn_cmd`, z. B. `show/registered`): Diese drucken
+  am Console-Socket den **Prompt vor dem Output**, wodurch der bisherige prompt-basierte
+  Abschluss eine leere Antwort lieferte und der eigentliche Output am *nächsten* Befehl klebte
+  (Symptom: „erster Klick nichts, zweiter Klick zeigt es"). `ConsoleSocketChannel` schließt
+  eine Antwort jetzt über ein kurzes Ruhefenster ab (`settleDelay`, Default 400 ms) und filtert
+  alle Prompt-Zeilen heraus — beide Reihenfolgen (Output→Prompt und Prompt→Output) werden
+  korrekt erfasst. Live am Socket mit Zeitstempeln verifiziert. 2 neue Unit-Tests (gesamt 52).
+
 ### Entscheidungen
 - Sprache: Swift / SwiftUI (Doku DE, Code EN), Ziel macOS 26+.
 - Verbindung: SSH + `console.pl` (volle Sysop-Rechte), nur SSH-Key über System-SSH.

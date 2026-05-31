@@ -47,6 +47,35 @@ final class ResponseAccumulatorTests: XCTestCase {
     }
 }
 
+final class ConsoleSocketFramingTests: XCTestCase {
+    let detector = PromptDetector()
+
+    /// Normal command: output first, then the trailing prompt.
+    func testStripsTrailingPrompt() {
+        let buffer = "Node         Callsigns\nHB9HJI-2     HB9HJI\nHB9HJI de HB9HJI-2 1746Z >\n"
+        XCTAssertEqual(
+            ConsoleSocketChannel.stripPrompts(from: buffer, using: detector),
+            "Node         Callsigns\nHB9HJI-2     HB9HJI"
+        )
+    }
+
+    /// Forked command (spawn_cmd, e.g. show/registered): the prompt arrives *before* the
+    /// output. The bug was that this delivered an empty response and leaked the output onto
+    /// the next command; stripping all prompt lines must still yield the real output.
+    func testKeepsOutputThatFollowsThePrompt() {
+        let buffer = """
+        HB9HJI de HB9HJI-2 1746Z >
+        Registration is Required
+        HB9AF(1)       HB9TAA(1)      HB9TAF(1)
+        3 records
+        """ + "\n"
+        XCTAssertEqual(
+            ConsoleSocketChannel.stripPrompts(from: buffer, using: detector),
+            "Registration is Required\nHB9AF(1)       HB9TAA(1)      HB9TAF(1)\n3 records"
+        )
+    }
+}
+
 final class ChannelModeTests: XCTestCase {
     func testReadOnlyAllowsQueriesBlocksMutations() {
         let mode = ChannelMode.readOnly

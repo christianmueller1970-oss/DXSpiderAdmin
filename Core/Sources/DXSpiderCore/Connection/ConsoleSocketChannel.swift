@@ -23,6 +23,11 @@ public actor ConsoleSocketChannel: SysopChannel {
     private let socketPort: Int
     private let connectTimeout: Duration
     private let commandTimeout: Duration
+    /// Quiet window after the last display line before a response is considered complete.
+    /// DXSpider commands that fork (`spawn_cmd`, e.g. `show/registered`) print the prompt
+    /// *before* their output, so prompt-only framing would cut the response short and leak
+    /// the output onto the next command. Debouncing on this window captures both orderings.
+    private let settleDelay: Duration
 
     private var call = ""
     private var process: Process?
@@ -38,6 +43,7 @@ public actor ConsoleSocketChannel: SysopChannel {
     private var pendingWaiter: CheckedContinuation<String, Error>?
     private var stderrBuffer = ""
     private var intentionalClose = false
+    private var settleTask: Task<Void, Never>?
 
     public init(
         config: SSHConnectionConfig,
@@ -47,7 +53,8 @@ public actor ConsoleSocketChannel: SysopChannel {
         socketHost: String = "127.0.0.1",
         socketPort: Int = 27754,
         connectTimeout: Duration = .seconds(20),
-        commandTimeout: Duration = .seconds(15)
+        commandTimeout: Duration = .seconds(15),
+        settleDelay: Duration = .milliseconds(400)
     ) {
         self.config = config
         self.mode = mode
@@ -57,6 +64,7 @@ public actor ConsoleSocketChannel: SysopChannel {
         self.socketPort = socketPort
         self.connectTimeout = connectTimeout
         self.commandTimeout = commandTimeout
+        self.settleDelay = settleDelay
     }
 
     // MARK: - Lifecycle
@@ -235,9 +243,45 @@ public actor ConsoleSocketChannel: SysopChannel {
         }
         guard message.isDisplay else { return } // ignore X broadcasts (spot feed) and others
         accumulator.append(message.text + "\n")
-        while let response = accumulator.takeCompletedResponse() {
-            deliver(.success(response))
+        // Don't deliver on the bare prompt — forked commands (spawn_cmd) print the prompt
+        // *before* their output. Wait until the stream falls quiet, then deliver the whole
+        // response with prompt lines stripped (see `settleDelay`).
+        scheduleSettle()
+    }
+
+    /// (Re)start the quiet-window timer; each new display line pushes it back.
+    private func scheduleSettle() {
+        settleTask?.cancel()
+        let delay = settleDelay
+        settleTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            await self?.flushSettled()
         }
+    }
+
+    /// Deliver everything buffered since the last command as one response, dropping the
+    /// prompt line(s). Handles both orderings (output→prompt and prompt→output).
+    private func flushSettled() {
+        let pending = accumulator.pending
+        guard !pending.isEmpty else { return }
+        accumulator = ResponseAccumulator()
+        deliver(.success(Self.stripPrompts(from: pending, using: detector)))
+    }
+
+    /// Remove every prompt line and surrounding blank lines, leaving only command output.
+    static func stripPrompts(from text: String, using detector: PromptDetector) -> String {
+        var lines = text
+            .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .map(String.init)
+        lines.removeAll { detector.isPromptLine($0) }
+        while let first = lines.first, first.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeFirst()
+        }
+        while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeLast()
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func appendStderr(_ text: String) {
@@ -299,6 +343,8 @@ public actor ConsoleSocketChannel: SysopChannel {
 
     private func teardown(intentional: Bool) {
         intentionalClose = intentional
+        settleTask?.cancel()
+        settleTask = nil
         readerTask?.cancel()
         readerTask = nil
         stdoutHandle?.readabilityHandler = nil
