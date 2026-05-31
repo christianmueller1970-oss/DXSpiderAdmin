@@ -27,9 +27,12 @@ final class ConnectionViewModel {
     // MARK: User & Node management (M2)
     private(set) var users: [ClusterUser] = []
     private(set) var nodes: [ClusterNode] = []
+    private(set) var registered: [ClusterUser] = []
+    private(set) var registrationRequired: Bool?
     private(set) var isRefreshing = false
     var userSearch = ""
     var nodeSearch = ""
+    var registeredSearch = ""
 
     private var channel: (any SysopChannel)?
     private let audit = InMemoryAuditLog()
@@ -71,6 +74,12 @@ final class ConnectionViewModel {
         guard !query.isEmpty else { return nodes }
         return nodes.filter { $0.callsign.localizedCaseInsensitiveContains(query) }
     }
+    /// Client-side filter over the registered users (the node has no wildcard filter).
+    var filteredRegistered: [ClusterUser] {
+        let query = registeredSearch.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return registered }
+        return registered.filter { $0.callsign.localizedCaseInsensitiveContains(query) }
+    }
 
     // MARK: Actions
 
@@ -102,6 +111,8 @@ final class ConnectionViewModel {
         state = .disconnected
         users = []
         nodes = []
+        registered = []
+        registrationRequired = nil
         append("Verbindung getrennt.")
     }
 
@@ -134,6 +145,28 @@ final class ConnectionViewModel {
     func refreshAll() async {
         await refreshUsers()
         await refreshNodes()
+        await refreshRegistered()
+    }
+
+    func refreshRegistered() async {
+        guard isConnected else { return }
+        isRefreshing = true
+        do {
+            let raw = try await dispatch(.showRegistered(call: nil))
+            let result = ShowRegisteredParser().parse(raw)
+            registered = result.users
+            registrationRequired = result.registrationRequired
+        } catch {
+            lastError = describe(error)
+        }
+        isRefreshing = false
+        await syncState()
+    }
+
+    /// Destructive: remove a single registration, then refresh the list.
+    func unregister(_ callsign: String) async {
+        await send(.unsetRegister(callsigns: [callsign]))
+        await refreshRegistered()
     }
 
     func refreshUsers() async {
@@ -245,6 +278,12 @@ final class ConnectionViewModel {
             """
         case .showConfiguration:
             return "DXSpider V1.57 build 0.x — demo node HB9HJI-2"
+        case .showRegistered:
+            return """
+            Registration is Required
+            DL1ABC(1)      HB9XYZ(1)      OE1ABC(1)
+            3 records
+            """
         default:
             return "(Demo) ausgeführt: \(command.line)"
         }

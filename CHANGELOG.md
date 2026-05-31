@@ -112,6 +112,17 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   „Einzelnes Rufzeichen prüfen". `show/badspotter` ignoriert Argumente und listet immer alle.
   4 neue Unit-Tests (gesamt 54 grün).
 
+- Durchsuchbare Registrierten-Liste & weitere Verwaltungsbefehle: neuer `ShowRegisteredParser`
+  (Core) parst `show/registered` (Calls ohne `(level)`-Suffix, Status „Required/NOT Required").
+  In „User & Nodes" neuer Tab **„Registriert"** mit Suchfeld (client-seitiger Filter — der Node
+  kann kein Wildcard, siehe oben) und „Aufheben" je Zeile (mit Bestätigung). `ConnectionViewModel`
+  um `registered`/`filteredRegistered`/`refreshRegistered()`/`unregister()` erweitert.
+  Neue Befehle im Command Builder über eine wiederverwendbare `MultiCommandSection` (mehrere
+  Einträge je Feld): **Lockout** (`set/unset/lockout`), **Bad Node**, **Bad DX**, **Bad Words**
+  (`set/badword` nimmt Wörter statt Calls). **Live verifiziert:** `show/lockout` braucht ein
+  Argument (`<call>|ALL`) → wir senden `show/lockout ALL`; die übrigen `show/bad…` ignorieren
+  Argumente. 6 neue Unit-Tests (gesamt 59 grün).
+
 ### Fixed
 - Antwort-Framing für geforkte Befehle (`spawn_cmd`, z. B. `show/registered`): Diese drucken
   am Console-Socket den **Prompt vor dem Output**, wodurch der bisherige prompt-basierte

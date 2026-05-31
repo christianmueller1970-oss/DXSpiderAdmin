@@ -51,6 +51,30 @@ final class DXCommandTests: XCTestCase {
         XCTAssertTrue(DXCommand.showRoute(callsign: "W1AW").isReadOnly)
     }
 
+    func testListAdminCommandLines() {
+        XCTAssertEqual(DXCommand.setLockout(callsigns: ["w1aw", "hb9a"]).line, "set/lockout W1AW HB9A")
+        XCTAssertEqual(DXCommand.unsetLockout(callsigns: ["w1aw"]).line, "unset/lockout W1AW")
+        XCTAssertEqual(DXCommand.setBadNode(callsigns: ["gb7xyz"]).line, "set/badnode GB7XYZ")
+        XCTAssertEqual(DXCommand.unsetBadNode(callsigns: ["gb7xyz"]).line, "unset/badnode GB7XYZ")
+        XCTAssertEqual(DXCommand.setBadDX(callsigns: ["test"]).line, "set/baddx TEST")
+        XCTAssertEqual(DXCommand.setBadWord(words: ["spam", "junk"]).line, "set/badword SPAM JUNK")
+        XCTAssertEqual(DXCommand.unsetBadWord(words: ["spam"]).line, "unset/badword SPAM")
+    }
+
+    func testListShowCommandsAreReadOnlyNoArgs() {
+        XCTAssertEqual(DXCommand.showLockout.line, "show/lockout ALL")  // requires <call>|ALL
+        XCTAssertEqual(DXCommand.showBadNode.line, "show/badnode")
+        XCTAssertEqual(DXCommand.showBadDX.line, "show/baddx")
+        XCTAssertEqual(DXCommand.showBadWord.line, "show/badword")
+        for cmd: DXCommand in [.showLockout, .showBadNode, .showBadDX, .showBadWord] {
+            XCTAssertTrue(cmd.isReadOnly)
+        }
+        for cmd: DXCommand in [.setLockout(callsigns: ["X"]), .setBadNode(callsigns: ["X"]),
+                               .setBadDX(callsigns: ["X"]), .setBadWord(words: ["X"])] {
+            XCTAssertTrue(cmd.isDestructive)
+        }
+    }
+
     func testShowRegisteredLine() {
         // Note the trailing "ed": listing is "show/registered", while set/unset use "register".
         XCTAssertEqual(DXCommand.showRegistered(call: nil).line, "show/registered")

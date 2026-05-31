@@ -10,9 +10,15 @@ struct ManagementView: View {
     @State private var pending: PendingAction?
 
     enum Tab: String, CaseIterable, Identifiable {
-        case users, nodes
+        case users, nodes, registered
         var id: String { rawValue }
-        var title: String { self == .users ? "User" : "Nodes" }
+        var title: String {
+            switch self {
+            case .users: "User"
+            case .nodes: "Nodes"
+            case .registered: "Registriert"
+            }
+        }
     }
 
     var body: some View {
@@ -70,6 +76,7 @@ struct ManagementView: View {
             switch tab {
             case .users: usersList
             case .nodes: nodesList
+            case .registered: registeredList
             }
         }
     }
@@ -138,6 +145,32 @@ struct ManagementView: View {
         .searchable(text: $model.nodeSearch, prompt: "Nodes filtern")
     }
 
+    private var registeredList: some View {
+        List {
+            Section {
+                if model.filteredRegistered.isEmpty {
+                    Text(model.isRefreshing ? "Lade …" : "Keine registrierten Rufzeichen.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(model.filteredRegistered) { user in
+                    HStack {
+                        Text(user.callsign).font(.body.monospaced())
+                        Spacer()
+                        Button("Aufheben", role: .destructive) {
+                            pending = .unregister(user.callsign)
+                        }
+                        .disabled(!model.allowWrites)
+                    }
+                }
+            } header: {
+                if let required = model.registrationRequired {
+                    Text("Registrierung: \(required ? "erforderlich" : "nicht erforderlich") · \(model.registered.count) Calls")
+                }
+            }
+        }
+        .searchable(text: $model.registeredSearch, prompt: "Registrierte filtern")
+    }
+
     private var privilegeChoices: [PrivilegeLevel] {
         [0, 1, 5, 9].compactMap(PrivilegeLevel.init(rawValue:))
     }
@@ -156,6 +189,8 @@ struct ManagementView: View {
             await model.boot(callsign)
         case .setPriv(let level, let callsign):
             await model.setPrivilege(level, for: callsign)
+        case .unregister(let callsign):
+            await model.unregister(callsign)
         }
         pending = nil
     }
@@ -165,17 +200,20 @@ struct ManagementView: View {
 enum PendingAction: Identifiable {
     case boot(String)
     case setPriv(PrivilegeLevel, String)
+    case unregister(String)
 
     var id: String {
         switch self {
         case .boot(let call): "boot-\(call)"
         case .setPriv(let level, let call): "priv-\(level.rawValue)-\(call)"
+        case .unregister(let call): "unreg-\(call)"
         }
     }
     var title: String {
         switch self {
         case .boot(let call): "Station \(call) trennen?"
         case .setPriv(let level, let call): "\(call) auf Level \(level.rawValue) setzen?"
+        case .unregister(let call): "Registrierung von \(call) aufheben?"
         }
     }
     var message: String {
@@ -184,12 +222,15 @@ enum PendingAction: Identifiable {
             "Der Befehl „boot \(call)“ trennt die Station vom Node. Destruktiver Befehl."
         case .setPriv(let level, let call):
             "Der Befehl „set/priv \(level.rawValue) \(call)“ ändert die Rechte. Destruktiver Befehl."
+        case .unregister(let call):
+            "Der Befehl „unset/register \(call)“ entzieht das Spotting-Recht. Destruktiver Befehl."
         }
     }
     var confirmLabel: String {
         switch self {
         case .boot: "Trennen"
         case .setPriv: "Setzen"
+        case .unregister: "Aufheben"
         }
     }
 }

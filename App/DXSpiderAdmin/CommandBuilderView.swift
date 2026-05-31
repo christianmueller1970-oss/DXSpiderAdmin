@@ -8,7 +8,6 @@ struct CommandBuilderView: View {
     @Bindable var model: ConnectionViewModel
     @State private var registerCalls = ""
     @State private var registeredFilter = ""
-    @State private var badSpotterCalls = ""
     @State private var routeCall = ""
     @State private var rawText = ""
     @State private var pending: DXCommand?
@@ -81,21 +80,43 @@ struct CommandBuilderView: View {
                 }
             }
 
-            Section("Bad Spotter") {
-                TextField("Rufzeichen (mehrere mit Leerzeichen)", text: $badSpotterCalls)
-                    .textFieldStyle(.roundedBorder)
-                PreviewLine(command: badSpotterList.isEmpty ? nil : .setBadSpotter(callsigns: badSpotterList))
-                HStack {
-                    Button("Sperren", role: .destructive) { pending = .setBadSpotter(callsigns: badSpotterList) }
-                        .disabled(!model.allowWrites || !badSpotterCallsValid)
-                    Button("Freigeben") { pending = .unsetBadSpotter(callsigns: badSpotterList) }
-                        .disabled(!model.allowWrites || !badSpotterCallsValid)
-                }
-                // show/badspotter ist read-only und ignoriert Argumente (listet immer alle).
-                Button("Bad Spotter anzeigen") {
-                    Task { await model.send(.showBadSpotter) }
-                }
-            }
+            // Listen-Pflege (jeweils mehrere Einträge mit Leerzeichen). show/* ignorieren
+            // node-seitig Argumente → listen immer alles. Schreiben braucht Schreibmodus.
+            MultiCommandSection(
+                title: "Bad Spotter", placeholder: "Rufzeichen (mehrere mit Leerzeichen)",
+                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad Spotter anzeigen",
+                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
+                makeSet: { .setBadSpotter(callsigns: $0) }, makeUnset: { .unsetBadSpotter(callsigns: $0) },
+                showCommand: .showBadSpotter, send: send
+            )
+            MultiCommandSection(
+                title: "Lockout (User aussperren)", placeholder: "Rufzeichen (mehrere mit Leerzeichen)",
+                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Lockouts anzeigen",
+                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
+                makeSet: { .setLockout(callsigns: $0) }, makeUnset: { .unsetLockout(callsigns: $0) },
+                showCommand: .showLockout, send: send
+            )
+            MultiCommandSection(
+                title: "Bad Node", placeholder: "Node-Rufzeichen (mehrere mit Leerzeichen)",
+                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad Nodes anzeigen",
+                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
+                makeSet: { .setBadNode(callsigns: $0) }, makeUnset: { .unsetBadNode(callsigns: $0) },
+                showCommand: .showBadNode, send: send
+            )
+            MultiCommandSection(
+                title: "Bad DX (gefilterte DX-Calls)", placeholder: "Rufzeichen (mehrere mit Leerzeichen)",
+                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad DX anzeigen",
+                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
+                makeSet: { .setBadDX(callsigns: $0) }, makeUnset: { .unsetBadDX(callsigns: $0) },
+                showCommand: .showBadDX, send: send
+            )
+            MultiCommandSection(
+                title: "Bad Words (Wortfilter)", placeholder: "Wörter (mehrere mit Leerzeichen)",
+                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad Words anzeigen",
+                allowWrites: model.allowWrites, requireCallsigns: false, pending: $pending,
+                makeSet: { .setBadWord(words: $0) }, makeUnset: { .unsetBadWord(words: $0) },
+                showCommand: .showBadWord, send: send
+            )
 
             Section("Abfragen (read-only)") {
                 Button("show/configuration") {
@@ -159,12 +180,15 @@ struct CommandBuilderView: View {
         rawText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Fire-and-forget send for read-only buttons (no confirmation needed).
+    private func send(_ command: DXCommand) {
+        Task { await model.send(command) }
+    }
+
     /// Normalised, non-empty callsigns parsed from a space-separated field.
     private var registerList: [String] { Self.callList(registerCalls) }
-    private var badSpotterList: [String] { Self.callList(badSpotterCalls) }
     /// At least one token and every token looks like a callsign.
     private var registerCallsValid: Bool { Self.allValidCallsigns(registerCalls) }
-    private var badSpotterCallsValid: Bool { Self.allValidCallsigns(badSpotterCalls) }
 
     /// Trimmed text, or `nil` when empty — used for optional `show/…` filters.
     private func optional(_ text: String) -> String? {
@@ -187,6 +211,52 @@ struct CommandBuilderView: View {
     private func submitRaw() {
         guard !rawTextTrimmed.isEmpty else { return }
         pending = .raw(rawTextTrimmed)
+    }
+}
+
+/// Reusable section for a list-style admin command: a multi-token field with set/unset
+/// (destructive → routed through the parent's confirmation) and a read-only "show all"
+/// button. Used for Bad Spotter, Lockout, Bad Node, Bad DX and Bad Words.
+private struct MultiCommandSection: View {
+    let title: String
+    let placeholder: String
+    let setLabel: String
+    let unsetLabel: String
+    let showLabel: String
+    let allowWrites: Bool
+    /// Free-form bad words skip the callsign check; everything else requires callsign-shaped tokens.
+    let requireCallsigns: Bool
+    @Binding var pending: DXCommand?
+    let makeSet: ([String]) -> DXCommand
+    let makeUnset: ([String]) -> DXCommand
+    let showCommand: DXCommand
+    let send: (DXCommand) -> Void
+
+    @State private var text = ""
+
+    private var tokens: [String] {
+        text.split(whereSeparator: \.isWhitespace).map(String.init).filter { !$0.isEmpty }
+    }
+    private var valid: Bool {
+        guard !tokens.isEmpty else { return false }
+        guard requireCallsigns else { return true }
+        return tokens.allSatisfy { Callsign.isLikely(Callsign.normalize($0)) }
+    }
+
+    var body: some View {
+        Section(title) {
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.roundedBorder)
+            PreviewLine(command: tokens.isEmpty ? nil : makeSet(tokens))
+            HStack {
+                Button(setLabel, role: .destructive) { pending = makeSet(tokens) }
+                    .disabled(!allowWrites || !valid)
+                Button(unsetLabel) { pending = makeUnset(tokens) }
+                    .disabled(!allowWrites || !valid)
+            }
+            // read-only → direkt senden (Node ignoriert hier Argumente, listet alles).
+            Button(showLabel) { send(showCommand) }
+        }
     }
 }
 

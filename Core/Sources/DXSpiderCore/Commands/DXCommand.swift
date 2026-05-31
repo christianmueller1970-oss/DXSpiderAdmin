@@ -14,6 +14,10 @@ public enum DXCommand: Equatable, Sendable {
     /// multiple calls do NOT work here (verified live); nil lists all registered users.
     case showRegistered(call: String?)
     case showBadSpotter
+    case showLockout
+    case showBadNode
+    case showBadDX
+    case showBadWord
 
     // Mutating / administrative
     case setPrivilege(level: PrivilegeLevel, callsign: String)
@@ -23,6 +27,15 @@ public enum DXCommand: Equatable, Sendable {
     case unsetRegister(callsigns: [String])
     case setBadSpotter(callsigns: [String])
     case unsetBadSpotter(callsigns: [String])
+    case setLockout(callsigns: [String])
+    case unsetLockout(callsigns: [String])
+    case setBadNode(callsigns: [String])
+    case unsetBadNode(callsigns: [String])
+    case setBadDX(callsigns: [String])
+    case unsetBadDX(callsigns: [String])
+    /// Bad words filter banned terms (not callsigns); the node uppercases them.
+    case setBadWord(words: [String])
+    case unsetBadWord(words: [String])
 
     // Spot filters
     case acceptSpots(slot: Int, rule: String)
@@ -52,6 +65,16 @@ public enum DXCommand: Equatable, Sendable {
         case .showBadSpotter:
             // The node ignores any argument here and always lists the full set.
             return "show/badspotter"
+        case .showLockout:
+            // Unlike the other show/bad… commands, this REQUIRES an argument
+            // ("usage: sh/lockout <call>|ALL", verified live) — ALL lists everything.
+            return "show/lockout ALL"
+        case .showBadNode:
+            return "show/badnode"
+        case .showBadDX:
+            return "show/baddx"
+        case .showBadWord:
+            return "show/badword"
         case .setPrivilege(let level, let callsign):
             return "set/priv \(level.rawValue) \(Self.normalize(callsign))"
         case .setNode(let callsign):
@@ -67,6 +90,22 @@ public enum DXCommand: Equatable, Sendable {
             return "set/badspotter \(Self.normalizeList(callsigns))"
         case .unsetBadSpotter(let callsigns):
             return "unset/badspotter \(Self.normalizeList(callsigns))"
+        case .setLockout(let callsigns):
+            return "set/lockout \(Self.normalizeList(callsigns))"
+        case .unsetLockout(let callsigns):
+            return "unset/lockout \(Self.normalizeList(callsigns))"
+        case .setBadNode(let callsigns):
+            return "set/badnode \(Self.normalizeList(callsigns))"
+        case .unsetBadNode(let callsigns):
+            return "unset/badnode \(Self.normalizeList(callsigns))"
+        case .setBadDX(let callsigns):
+            return "set/baddx \(Self.normalizeList(callsigns))"
+        case .unsetBadDX(let callsigns):
+            return "unset/baddx \(Self.normalizeList(callsigns))"
+        case .setBadWord(let words):
+            return "set/badword \(Self.normalizeList(words))"
+        case .unsetBadWord(let words):
+            return "unset/badword \(Self.normalizeList(words))"
         case .acceptSpots(let slot, let rule):
             return "accept/spots \(slot) \(rule)"
         case .rejectSpots(let slot, let rule):
@@ -82,10 +121,13 @@ public enum DXCommand: Equatable, Sendable {
     public var isDestructive: Bool {
         switch self {
         case .showUsers, .showNodes, .showConfiguration, .showRoute,
-             .showRegistered, .showBadSpotter:
+             .showRegistered, .showBadSpotter, .showLockout,
+             .showBadNode, .showBadDX, .showBadWord:
             return false
         case .setPrivilege, .setNode, .boot, .setRegister, .unsetRegister,
              .setBadSpotter, .unsetBadSpotter,
+             .setLockout, .unsetLockout, .setBadNode, .unsetBadNode,
+             .setBadDX, .unsetBadDX, .setBadWord, .unsetBadWord,
              .acceptSpots, .rejectSpots, .clearSpots:
             return true
         case .raw:
