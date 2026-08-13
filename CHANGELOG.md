@@ -20,6 +20,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - `docs/NodeQueries.md`: der vollständige Verifikationsbefund inkl. der Befehle, die dieser
   Build **nicht** kennt (`show/ping`, `show/configuration/users`, `show/files`, `show/qrz` …).
 - 17 neue Unit-Tests (gesamt 77, grün).
+- App-Build-Nummer auf 2 erhöht (`CURRENT_PROJECT_VERSION`), damit sich ein Testbuild in
+  der Sidebar-Fusszeile von der v0.1-DMG unterscheiden lässt.
 
 ### Fixed
 - Versions-Irrtum aufgeklärt (`docs/NodeVersion.md`): `show/version` meldet auf HB9HJI-2
