@@ -20,8 +20,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - `docs/NodeQueries.md`: der vollständige Verifikationsbefund inkl. der Befehle, die dieser
   Build **nicht** kennt (`show/ping`, `show/configuration/users`, `show/files`, `show/qrz` …).
 - 17 neue Unit-Tests (gesamt 77, grün).
-- App-Build-Nummer auf 2 erhöht (`CURRENT_PROJECT_VERSION`), damit sich ein Testbuild in
+- App-Build-Nummer auf 3 erhöht (`CURRENT_PROJECT_VERSION`), damit sich ein Testbuild in
   der Sidebar-Fusszeile von der v0.1-DMG unterscheiden lässt.
+- Info & Diagnose: Ausgabe blieb leer, obwohl die Zeilenzahl stimmte — der Text forderte
+  in einem waagrecht scrollenden `ScrollView` `maxWidth: .infinity` an, was das Layout
+  ungültig macht. Zusätzlich schrumpft bei knapper Fensterhöhe jetzt nur noch die Ausgabe
+  (Kacheln und Abfrage-Leiste bleiben stehen), und der Schnellzugriff bricht auf schmalen
+  Fenstern um, statt aus dem Fenster zu laufen.
 
 ### Fixed
 - Versions-Irrtum aufgeklärt (`docs/NodeVersion.md`): `show/version` meldet auf HB9HJI-2

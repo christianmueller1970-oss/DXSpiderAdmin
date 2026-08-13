@@ -66,10 +66,13 @@ struct NodeInfoView: View {
     private var content: some View {
         VStack(spacing: 0) {
             statusTiles
+                .fixedSize(horizontal: false, vertical: true)
             Divider()
             queryBar
+                .fixedSize(horizontal: false, vertical: true)
             Divider()
             output
+                .layoutPriority(1)
         }
     }
 
@@ -131,17 +134,9 @@ struct NodeInfoView: View {
 
     private var queryBar: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
-                ForEach(NodeQuery.favourites) { query in
-                    Button(query.title) {
-                        selectedID = query.id
-                        argument = query.defaultArgument
-                        run(query, argument: query.defaultArgument)
-                    }
-                    .controlSize(.small)
-                    .disabled(!model.isConnected || model.isQuerying)
-                }
+            ViewThatFits(in: .horizontal) {
+                favourites(wrapped: false)
+                favourites(wrapped: true)
             }
 
             HStack(spacing: 8) {
@@ -181,6 +176,36 @@ struct NodeInfoView: View {
         .padding([.horizontal, .bottom])
     }
 
+    /// The quick-access row: one line when it fits, otherwise wrapped into a grid.
+    @ViewBuilder
+    private func favourites(wrapped: Bool) -> some View {
+        let buttons = ForEach(NodeQuery.favourites) { query in
+            Button(query.title) {
+                selectedID = query.id
+                argument = query.defaultArgument
+                run(query, argument: query.defaultArgument)
+            }
+            .controlSize(.small)
+            .disabled(!model.isConnected || model.isQuerying)
+        }
+
+        if wrapped {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 6)],
+                          alignment: .leading, spacing: 6) {
+                    buttons
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
+                buttons
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
     // MARK: Ausgabe
 
     private var output: some View {
@@ -206,14 +231,17 @@ struct NodeInfoView: View {
                     .disabled(model.queryOutput.isEmpty)
             }
 
+            // Waagrecht scrollbar, damit breite Tabellen (show/hftable) nicht umbrechen.
+            // Der Text darf hier KEINE maxWidth-Infinity fordern: in einem horizontal
+            // scrollenden ScrollView wird das Layout dadurch ungültig und der Inhalt
+            // unsichtbar — die Zeilenzahl stimmt dann, angezeigt wird aber nichts.
             ScrollView([.horizontal, .vertical]) {
                 Text(model.queryOutput.isEmpty ? "—" : model.queryOutput)
                     .font(.system(.body, design: .monospaced))
                     .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8)
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 120, maxHeight: .infinity, alignment: .topLeading)
             .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 6))
 
             if let error = model.lastError {
