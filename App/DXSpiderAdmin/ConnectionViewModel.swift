@@ -31,6 +31,15 @@ final class ConnectionViewModel {
     private(set) var registrationRequired: Bool?
     private(set) var blockEntries: [String] = []
     private(set) var isRefreshing = false
+
+    // MARK: Info & Diagnose
+    /// Vital signs behind the status tiles; empty until `refreshNodeStatus()` ran.
+    private(set) var nodeStatus = NodeStatus()
+    /// Raw response of the last catalogue query — kept apart from `consoleLog` so a
+    /// 500-line answer (e.g. show/newconfiguration) doesn't drown the command console.
+    private(set) var queryOutput = ""
+    private(set) var lastQueryLine = ""
+    private(set) var isQuerying = false
     var userSearch = ""
     var nodeSearch = ""
     var registeredSearch = ""
@@ -122,6 +131,9 @@ final class ConnectionViewModel {
         registered = []
         registrationRequired = nil
         blockEntries = []
+        nodeStatus = NodeStatus()
+        queryOutput = ""
+        lastQueryLine = ""
         append("Verbindung getrennt.")
     }
 
@@ -225,6 +237,48 @@ final class ConnectionViewModel {
         await syncState()
     }
 
+    // MARK: Info & Diagnose
+
+    /// Read the three status commands and fill the tiles. Read-only, safe in any mode.
+    func refreshNodeStatus() async {
+        guard isConnected else { return }
+        isRefreshing = true
+        do {
+            let cluster = try await dispatch(.query(.clusterStatus, argument: ""))
+            let version = try await dispatch(.query(.softwareVersion, argument: ""))
+            let time = try await dispatch(.query(.nodeTime, argument: ""))
+            nodeStatus = NodeStatusParser().parse(cluster: cluster, version: version, time: time)
+        } catch {
+            lastError = describe(error)
+        }
+        isRefreshing = false
+        await syncState()
+    }
+
+    /// Run one catalogue query and keep its raw answer in `queryOutput`.
+    /// Only the command line goes to the shared console, as an audit trail.
+    func runQuery(_ query: NodeQuery, argument: String) async {
+        guard isConnected, query.isValid(argument: argument) else { return }
+        let command = DXCommand.query(query, argument: argument)
+        lastError = nil
+        isQuerying = true
+        lastQueryLine = command.line
+        append("> \(command.line)")
+        do {
+            queryOutput = try await dispatch(command)
+        } catch {
+            lastError = describe(error)
+            queryOutput = ""
+        }
+        isQuerying = false
+        await syncState()
+    }
+
+    func clearQueryOutput() {
+        queryOutput = ""
+        lastQueryLine = ""
+    }
+
     /// Destructive: change a user's privilege level (requires write mode + confirmation in the UI).
     func setPrivilege(_ level: PrivilegeLevel, for callsign: String) async {
         await send(.setPrivilege(level: level, callsign: callsign))
@@ -314,8 +368,34 @@ final class ConnectionViewModel {
             DL1ABC(1)      HB9XYZ(1)      OE1ABC(1)
             3 records
             """
+        case .query(let query, _):
+            return demoQueryResponse(query, line: command.line)
         default:
             return "(Demo) ausgeführt: \(command.line)"
+        }
+    }
+
+    /// Canned answers for the info screen, worded like the real node so the tiles and the
+    /// parser can be exercised without a connection.
+    nonisolated private static func demoQueryResponse(_ query: NodeQuery, line: String) -> String {
+        switch query.id {
+        case NodeQuery.clusterStatus.id:
+            return "Nodes: 3/400 Users [Loc/Clr]: 4/5154 Max: 8/5768 - Uptime:  8d 22h 19m"
+        case NodeQuery.softwareVersion.id:
+            return "DXSpider v1.55 (build 823 git: mojo/demo[r]) using perl v5.36.0 on Linux"
+        case NodeQuery.nodeTime.id:
+            return "Local Time: 13-Aug-2026 1658, UTC 1658Z"
+        case "show/node":
+            return """
+            Node Call   Sort    Version
+            DA0BCC-7    Spider  1.57 build: 633
+            HB9HJI-2    Spider  1.55 build: 823
+            2 records
+            """
+        case "show/motd":
+            return "  Welcome to HB9HJI-2 DX Cluster Switzerland (Demo)"
+        default:
+            return "(Demo) ausgeführt: \(line)"
         }
     }
 }

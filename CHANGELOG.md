@@ -7,6 +7,25 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 ## [Unreleased]
 
 ### Added
+- **Bereich „Info & Diagnose"**: Status-Kacheln (Uptime, User, Nodes, Version, Node-Zeit) aus
+  `show/cluster` + `show/version` + `show/time`, dazu ein gruppiertes Dropdown über den
+  read-only Abfrage-Katalog mit Argumentfeld, Dry-Run-Vorschau, Schnellzugriff-Buttons und
+  eigener Ausgabe samt „Kopieren" / „Sichern …" (Textdatei mit Kopfzeile).
+- `NodeQuery` (Core): datengetriebener Katalog von 37 read-only Abfragen in fünf Gruppen —
+  jede **live gegen HB9HJI-2 verifiziert** (DXSpider v1.55 build 823, 13-Aug-2026). Enthält
+  Argumenttyp, Validierung, Vorgabewert und Hilfetext; die UI rendert sich daraus, neue
+  Abfragen sind ein Katalogeintrag. Neuer `DXCommand`-Case `.query`, als read-only eingestuft.
+- `NodeStatus` + `NodeStatusParser` (Core): liest Nodes/User/Uptime/Version/Zeit feldweise,
+  damit abweichende Formulierungen nur den betroffenen Wert kosten statt den ganzen Status.
+- `docs/NodeQueries.md`: der vollständige Verifikationsbefund inkl. der Befehle, die dieser
+  Build **nicht** kennt (`show/ping`, `show/configuration/users`, `show/files`, `show/qrz` …).
+- 17 neue Unit-Tests (gesamt 77, grün).
+
+### Fixed
+- `docs/NodeProtocol.md` nannte den Node als DXSpider V1.57 — er läuft v1.55 build 823; 1.57
+  sind die Nachbarnodes.
+
+### Added (früher)
 - Projekt-Setup (M0): Repository, `README.md`, `CHANGELOG.md`, `.gitignore`.
 - Konzeptdokument V4 (`docs/Konzeptdokument.md`): Architektur SSH + `console.pl`,
   Sicherheits-/Datenschutzgrundsätze, UI-Struktur, Roadmap M0–M5.

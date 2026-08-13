@@ -25,6 +25,8 @@ struct ContentView: View {
             switch selection {
             case .connection:
                 ConnectionView(model: connection)
+            case .info:
+                NodeInfoView(model: connection)
             case .users:
                 ManagementView(model: connection)
             case .commands:
@@ -48,6 +50,7 @@ struct ContentView: View {
 
 enum SidebarItem: String, CaseIterable, Identifiable {
     case connection
+    case info
     case users
     case commands
     case blocklists
@@ -58,6 +61,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .connection: "Verbindung"
+        case .info: "Info & Diagnose"
         case .users: "User & Nodes"
         case .commands: "Command Builder"
         case .blocklists: "Sperrlisten"
@@ -68,6 +72,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .connection: "antenna.radiowaves.left.and.right"
+        case .info: "stethoscope"
         case .users: "person.2"
         case .commands: "hammer"
         case .blocklists: "nosign"

@@ -18,6 +18,10 @@ public enum DXCommand: Equatable, Sendable {
     case showBadNode
     case showBadDX
     case showBadWord
+    /// A read-only query from the verified ``NodeQuery`` catalogue (info & diagnostics
+    /// screen). The line is assembled by the catalogue entry from a typed argument, never
+    /// taken verbatim from a text field, so it stays safely read-only — unlike ``raw``.
+    case query(NodeQuery, argument: String)
 
     // Mutating / administrative
     case setPrivilege(level: PrivilegeLevel, callsign: String)
@@ -75,6 +79,8 @@ public enum DXCommand: Equatable, Sendable {
             return "show/baddx"
         case .showBadWord:
             return "show/badword"
+        case .query(let query, let argument):
+            return query.line(argument: argument)
         case .setPrivilege(let level, let callsign):
             return "set/priv \(level.rawValue) \(Self.normalize(callsign))"
         case .setNode(let callsign):
@@ -122,7 +128,7 @@ public enum DXCommand: Equatable, Sendable {
         switch self {
         case .showUsers, .showNodes, .showConfiguration, .showRoute,
              .showRegistered, .showBadSpotter, .showLockout,
-             .showBadNode, .showBadDX, .showBadWord:
+             .showBadNode, .showBadDX, .showBadWord, .query:
             return false
         case .setPrivilege, .setNode, .boot, .setRegister, .unsetRegister,
              .setBadSpotter, .unsetBadSpotter,

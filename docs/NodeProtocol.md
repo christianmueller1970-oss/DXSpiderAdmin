@@ -1,6 +1,11 @@
 # Node-Protokoll: Sysop-Console über den Console-Socket (Live-Befund §10)
 
-Beim Live-Test gegen den echten Node (HB9HJI-2, DXSpider V1.57) stellte sich heraus:
+Beim Live-Test gegen den echten Node (HB9HJI-2) stellte sich heraus:
+
+> **Version:** Der Node läuft **DXSpider v1.55 (build 823)** auf Perl v5.36.0 — per
+> `show/version` am 13-Aug-2026 bestätigt. Frühere Fassungen dieses Dokuments nannten
+> V1.57; das sind die Nachbarnodes, nicht dieser. Welche Befehle verfügbar sind, hängt
+> daran — siehe `docs/NodeQueries.md`.
 
 ## `console.pl` ist eine Curses-TUI — nicht direkt steuerbar
 

@@ -261,7 +261,8 @@ private struct MultiCommandSection: View {
 }
 
 /// Dry-run preview of the exact line a control will send (Konzeptdokument §2).
-private struct PreviewLine: View {
+/// Shared with the info screen, so it stays internal rather than file-private.
+struct PreviewLine: View {
     let command: DXCommand?
 
     var body: some View {
