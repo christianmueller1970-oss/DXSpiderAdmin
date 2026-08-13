@@ -36,11 +36,15 @@ public struct NodeStatusParser: Sendable {
         if let match = version.firstMatch(of: #/DXSpider\s+v?([\d.]+)/#) {
             status.version = String(match.1)
         }
-        if let match = version.firstMatch(of: #/build\s+(\d+)/#) {
+        // Beide Schreibweisen: "(build 823 git: …)" hier, "build: 686" bei anderen Nodes.
+        if let match = version.firstMatch(of: #/build:?\s*(\d+)/#) {
             status.build = String(match.1)
         }
         if let match = version.firstMatch(of: #/perl\s+v?([\d.]+)/#) {
             status.perlVersion = String(match.1)
+        }
+        if let match = version.firstMatch(of: #/git:\s*([^)\s]+)/#) {
+            status.gitVersion = String(match.1)
         }
 
         if let match = time.firstMatch(of: #/Local Time:\s*(.+?)\s*,/#) {

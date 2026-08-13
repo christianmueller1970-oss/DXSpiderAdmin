@@ -22,8 +22,13 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - 17 neue Unit-Tests (gesamt 77, grün).
 
 ### Fixed
-- `docs/NodeProtocol.md` nannte den Node als DXSpider V1.57 — er läuft v1.55 build 823; 1.57
-  sind die Nachbarnodes.
+- Versions-Irrtum aufgeklärt (`docs/NodeVersion.md`): `show/version` meldet auf HB9HJI-2
+  `v1.55 (build 823)`, installiert ist aber **v1.57 build 46**. Bei einer Git-Installation
+  leitet DXSpider die Nummer aus `git describe` ab — jüngster Tag (`1.55`) plus die 823
+  Commits danach. Der Node ist aktuell (HEAD = `origin/mojo`), nicht veraltet. `NodeStatus`
+  führt die Git-Herkunft jetzt mit, die Version-Kachel zeigt sie samt Tooltip-Erklärung.
+- `NodeStatusParser` erkennt auch die Schreibweise `build: 686`, die Nodes ohne Git-Repo
+  verwenden.
 
 ### Added (früher)
 - Projekt-Setup (M0): Repository, `README.md`, `CHANGELOG.md`, `.gitignore`.

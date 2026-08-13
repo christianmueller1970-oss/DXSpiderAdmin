@@ -53,3 +53,24 @@ final class NodeStatusParserTests: XCTestCase {
         XCTAssertTrue(NodeStatusParser().parse().isEmpty)
     }
 }
+
+extension NodeStatusParserTests {
+    /// HB9HJI-2 meldet die aus `git describe` abgeleitete Nummer (Tag 1.55 + 823 Commits),
+    /// während `/spider/perl/Version.pm` 1.57 build 46 sagt. Die Herkunft muss sichtbar
+    /// bleiben, sonst liest sich die Kachel als veraltete Installation.
+    func testGitOriginIsCapturedAndExplained() {
+        let status = NodeStatusParser().parse(version: version)
+        XCTAssertEqual(status.gitVersion, "mojo/3e9b3621[r]")
+        let caveat = status.versionCaveat
+        XCTAssertNotNil(caveat)
+        XCTAssertTrue(caveat?.contains("mojo/3e9b3621[r]") == true)
+    }
+
+    func testPlainVersionWithoutGitHasNoCaveat() {
+        let status = NodeStatusParser().parse(version: "DXSpider v1.57 build: 686")
+        XCTAssertEqual(status.version, "1.57")
+        XCTAssertEqual(status.build, "686")
+        XCTAssertNil(status.gitVersion)
+        XCTAssertNil(status.versionCaveat)
+    }
+}

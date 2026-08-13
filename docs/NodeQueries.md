@@ -4,9 +4,12 @@ Grundlage für den Bereich **Info & Diagnose** und für `NodeQuery.all`. Jeder K
 am **13-Aug-2026** einmal read-only über den Console-Socket gesendet und die Antwort
 protokolliert; aufgenommen wurde nur, was der Node tatsächlich beantwortet hat.
 
-> **Wichtig:** Der Node läuft **DXSpider v1.55 (build 823)**, Perl v5.36.0 — nicht v1.57, wie
-> in einer früheren Fassung von `NodeProtocol.md` stand. Die Nachbarnodes melden 1.57; der
-> eigene Build ist älter, und genau daran hängt, welche Befehle es gibt.
+> **Zur Version — nicht verwechseln:** `show/version` meldet auf HB9HJI-2
+> `DXSpider v1.55 (build 823 git: mojo/3e9b3621[r])`. Installiert ist aber **v1.57 build 46**
+> (`/spider/perl/Version.pm`). Bei einer Git-Installation leitet DXSpider die gemeldete
+> Nummer beim Start aus `git describe --long --tags` ab; dort ist der jüngste erreichbare
+> Tag `1.55`, gefolgt von 823 Commits — daraus wird „v1.55 build 823". Der Node ist also
+> **aktuell**, nicht veraltet. Details in `docs/NodeVersion.md`.
 
 ## Aufgenommen
 

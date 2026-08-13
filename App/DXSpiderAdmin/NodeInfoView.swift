@@ -80,26 +80,51 @@ struct NodeInfoView: View {
             tile("Uptime", model.nodeStatus.uptime, "clock")
             tile("User", model.nodeStatus.usersSummary, "person.2")
             tile("Nodes", model.nodeStatus.nodesSummary, "network")
-            tile("Version", model.nodeStatus.versionSummary, "cpu")
+            tile("Version", model.nodeStatus.versionSummary, "cpu",
+                 detail: model.nodeStatus.gitVersion,
+                 help: model.nodeStatus.versionCaveat)
             tile("Node-Zeit", model.nodeStatus.utcTime, "globe")
         }
         .padding()
     }
 
-    private func tile(_ title: String, _ value: String?, _ symbol: String) -> some View {
+    /// One status tile. `detail` adds a second, quieter line (used for the git origin of
+    /// the version), `help` becomes the tooltip explaining a value that needs context.
+    private func tile(
+        _ title: String,
+        _ value: String?,
+        _ symbol: String,
+        detail: String? = nil,
+        help: String? = nil
+    ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label(title, systemImage: symbol)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                Label(title, systemImage: symbol)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if help != nil {
+                    Image(systemName: "info.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Text(value ?? "—")
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
+            if let detail {
+                Text(detail)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+        .help(help ?? "")
     }
 
     // MARK: Abfrage-Leiste

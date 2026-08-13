@@ -2,10 +2,9 @@
 
 Beim Live-Test gegen den echten Node (HB9HJI-2) stellte sich heraus:
 
-> **Version:** Der Node läuft **DXSpider v1.55 (build 823)** auf Perl v5.36.0 — per
-> `show/version` am 13-Aug-2026 bestätigt. Frühere Fassungen dieses Dokuments nannten
-> V1.57; das sind die Nachbarnodes, nicht dieser. Welche Befehle verfügbar sind, hängt
-> daran — siehe `docs/NodeQueries.md`.
+> **Version:** Installiert ist **DXSpider v1.57 build 46** (EA3CV-Fork, Branch `mojo`) auf
+> Perl v5.36.0. `show/version` meldet abweichend `v1.55 (build 823 …)` — das ist eine
+> `git describe`-Ableitung, keine ältere Installation; siehe `docs/NodeVersion.md`.
 
 ## `console.pl` ist eine Curses-TUI — nicht direkt steuerbar
 

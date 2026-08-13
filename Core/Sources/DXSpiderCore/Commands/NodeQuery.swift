@@ -177,7 +177,7 @@ extension NodeQuery {
     public static let softwareVersion = NodeQuery(
         id: "show/version", title: "Software-Version", group: .runtime,
         base: "show/version",
-        note: "DXSpider-Version samt Build und die Perl-Version darunter.")
+        note: "DXSpider-Version, Build und Perl. Bei einer Git-Installation stammt die Nummer aus „git describe\" — also letzter Tag plus Commits danach, nicht die installierte Release-Version.")
     public static let nodeTime = NodeQuery(
         id: "show/time", title: "Node-Zeit", group: .runtime,
         base: "show/time", argument: .prefix,

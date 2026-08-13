@@ -382,7 +382,7 @@ final class ConnectionViewModel {
         case NodeQuery.clusterStatus.id:
             return "Nodes: 3/400 Users [Loc/Clr]: 4/5154 Max: 8/5768 - Uptime:  8d 22h 19m"
         case NodeQuery.softwareVersion.id:
-            return "DXSpider v1.55 (build 823 git: mojo/demo[r]) using perl v5.36.0 on Linux"
+            return "DXSpider v1.55 (build 823 git: mojo/3e9b3621[r]) using perl v5.36.0 on Linux"
         case NodeQuery.nodeTime.id:
             return "Local Time: 13-Aug-2026 1658, UTC 1658Z"
         case "show/node":
