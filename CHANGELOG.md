@@ -20,13 +20,25 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 - `docs/NodeQueries.md`: der vollständige Verifikationsbefund inkl. der Befehle, die dieser
   Build **nicht** kennt (`show/ping`, `show/configuration/users`, `show/files`, `show/qrz` …).
 - 17 neue Unit-Tests (gesamt 77, grün).
-- App-Build-Nummer auf 3 erhöht (`CURRENT_PROJECT_VERSION`), damit sich ein Testbuild in
+- App-Build-Nummer auf 4 erhöht (`CURRENT_PROJECT_VERSION`), damit sich ein Testbuild in
   der Sidebar-Fusszeile von der v0.1-DMG unterscheiden lässt.
-- Info & Diagnose: Ausgabe blieb leer, obwohl die Zeilenzahl stimmte — der Text forderte
-  in einem waagrecht scrollenden `ScrollView` `maxWidth: .infinity` an, was das Layout
-  ungültig macht. Zusätzlich schrumpft bei knapper Fensterhöhe jetzt nur noch die Ausgabe
-  (Kacheln und Abfrage-Leiste bleiben stehen), und der Schnellzugriff bricht auf schmalen
-  Fenstern um, statt aus dem Fenster zu laufen.
+- `scripts/uisnapshot.sh` + Startargument `-uiSmokeTest <bereich>` (optional
+  `-uiSmokeQuery <id>`): startet eine eigene Instanz im Demo-Backend und fotografiert deren
+  Fenster. Damit werden Layout-Fehler sichtbar, die kein Compiler und kein Unit-Test findet.
+
+### Fixed (Info & Diagnose, Layout)
+- **Ausgabe blieb leer**, obwohl die Zeilenzahl im Kopf stimmte: Der Text forderte in einem
+  waagrecht scrollenden `ScrollView` `maxWidth: .infinity` an, was das Layout ungültig macht.
+  Die Ausgabe scrollt jetzt nur senkrecht (wie die Konsole im Command Builder); breite
+  Tabellen brechen dadurch um, sind aber sichtbar.
+- **Status-Kacheln wurden nie gezeichnet:** ein `LazyVGrid` meldet in einem nicht-scrollenden
+  `VStack` keine Höhe. Fünf feste Kacheln brauchen kein Lazy-Layout → `HStack`.
+- **Inhalt lag unter der Titelleiste**, mitsamt verschobener Sidebar: Unter einer macOS-Toolbar
+  bekommt nur scrollender Inhalt den korrekten Safe-Area-Abstand. Kacheln, Abfrage-Leiste und
+  Ausgabe-Kopf sind jetzt angehefteter Section-Header eines ScrollView und bleiben beim
+  Scrollen stehen.
+- **Kacheln blieben leer**, wenn der Bereich schon offen war, bevor die Verbindung stand —
+  der Refresh hängt jetzt am Verbindungsstatus (`task(id:)`) statt nur am Erscheinen.
 
 ### Fixed
 - Versions-Irrtum aufgeklärt (`docs/NodeVersion.md`): `show/version` meldet auf HB9HJI-2

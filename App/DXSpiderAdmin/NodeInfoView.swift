@@ -48,8 +48,9 @@ struct NodeInfoView: View {
                 .disabled(!model.isConnected || model.isRefreshing)
             }
         }
-        .task {
-            // Beim ersten Öffnen die Kacheln füllen; danach nur noch auf Wunsch.
+        .task(id: model.isConnected) {
+            // Kacheln füllen, sobald die Verbindung steht — auch wenn dieser Bereich schon
+            // offen war, bevor verbunden wurde. Danach nur noch auf Wunsch.
             if model.isConnected && model.nodeStatus.isEmpty { await model.refreshNodeStatus() }
         }
         .onChange(of: selectedID) {
@@ -63,23 +64,37 @@ struct NodeInfoView: View {
         ) { _ in }
     }
 
+    /// Ein einziges ScrollView trägt die Ansicht; Kacheln, Abfrage-Leiste und Ausgabe-Kopf
+    /// sind sein angehefteter Section-Header und bleiben beim Scrollen stehen.
+    ///
+    /// Der Umweg ist nötig, weil unter einer macOS-Toolbar nur *scrollender* Inhalt den
+    /// korrekten Safe-Area-Abstand bekommt: ein einfacher VStack wird unter die Titelleiste
+    /// gezogen (und je höher er ist, desto mehr verschwindet dort), und ein `safeAreaInset`
+    /// setzt den Kopf an den Fensterrand statt unter die Toolbar.
     private var content: some View {
-        VStack(spacing: 0) {
-            statusTiles
-                .fixedSize(horizontal: false, vertical: true)
-            Divider()
-            queryBar
-                .fixedSize(horizontal: false, vertical: true)
-            Divider()
-            output
-                .layoutPriority(1)
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                Section {
+                    outputText
+                } header: {
+                    VStack(spacing: 0) {
+                        statusTiles
+                        Divider()
+                        queryBar
+                        Divider()
+                        outputHeader
+                        Divider()
+                    }
+                    .background(.bar)
+                }
+            }
         }
     }
 
     // MARK: Status-Kacheln
 
     private var statusTiles: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             tile("Uptime", model.nodeStatus.uptime, "clock")
             tile("User", model.nodeStatus.usersSummary, "person.2")
             tile("Nodes", model.nodeStatus.nodesSummary, "network")
@@ -134,9 +149,17 @@ struct NodeInfoView: View {
 
     private var queryBar: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ViewThatFits(in: .horizontal) {
-                favourites(wrapped: false)
-                favourites(wrapped: true)
+            HStack(spacing: 8) {
+                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
+                ForEach(NodeQuery.favourites) { query in
+                    Button(query.title) {
+                        selectedID = query.id
+                        argument = query.defaultArgument
+                        run(query, argument: query.defaultArgument)
+                    }
+                    .controlSize(.small)
+                    .disabled(!model.isConnected || model.isQuerying)
+                }
             }
 
             HStack(spacing: 8) {
@@ -176,44 +199,15 @@ struct NodeInfoView: View {
         .padding([.horizontal, .bottom])
     }
 
-    /// The quick-access row: one line when it fits, otherwise wrapped into a grid.
-    @ViewBuilder
-    private func favourites(wrapped: Bool) -> some View {
-        let buttons = ForEach(NodeQuery.favourites) { query in
-            Button(query.title) {
-                selectedID = query.id
-                argument = query.defaultArgument
-                run(query, argument: query.defaultArgument)
-            }
-            .controlSize(.small)
-            .disabled(!model.isConnected || model.isQuerying)
-        }
-
-        if wrapped {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 6)],
-                          alignment: .leading, spacing: 6) {
-                    buttons
-                }
-            }
-        } else {
-            HStack(spacing: 8) {
-                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
-                buttons
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
     // MARK: Ausgabe
 
-    private var output: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private var outputHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(model.lastQueryLine.isEmpty ? "Ausgabe" : model.lastQueryLine)
                     .font(.headline.monospaced())
                     .lineLimit(1)
+                    .truncationMode(.middle)
                 Spacer()
                 if !model.queryOutput.isEmpty {
                     Text("\(lineCount) Zeilen")
@@ -231,26 +225,28 @@ struct NodeInfoView: View {
                     .disabled(model.queryOutput.isEmpty)
             }
 
-            // Waagrecht scrollbar, damit breite Tabellen (show/hftable) nicht umbrechen.
-            // Der Text darf hier KEINE maxWidth-Infinity fordern: in einem horizontal
-            // scrollenden ScrollView wird das Layout dadurch ungültig und der Inhalt
-            // unsichtbar — die Zeilenzahl stimmt dann, angezeigt wird aber nichts.
-            ScrollView([.horizontal, .vertical]) {
-                Text(model.queryOutput.isEmpty ? "—" : model.queryOutput)
-                    .font(.system(.body, design: .monospaced))
-                    .textSelection(.enabled)
-                    .padding(8)
-            }
-            .frame(maxWidth: .infinity, minHeight: 120, maxHeight: .infinity, alignment: .topLeading)
-            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 6))
-
             if let error = model.lastError {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
                     .font(.callout)
             }
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+
+    /// Nur senkrecht scrollend, wie die Konsole im Command Builder: in einem waagrecht
+    /// scrollenden ScrollView darf der Inhalt kein `maxWidth: .infinity` fordern, sonst
+    /// wird das Layout ungültig und der Text verschwindet — ohne die Angabe wiederum
+    /// hängt er mittig statt links oben. Breite Tabellen brechen dadurch um; dafür ist
+    /// die Ausgabe immer sichtbar.
+    private var outputText: some View {
+        Text(model.queryOutput.isEmpty ? "—" : model.queryOutput)
+            .font(.system(.body, design: .monospaced))
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
     }
 
     // MARK: Helfer

@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import DXSpiderCore
 
 /// Top-level navigation: fixed sidebar (Konzeptdokument §6) with a detail area.
 /// Only the connection area exists in M1; User/Node management arrives in M2.
@@ -36,6 +38,34 @@ struct ContentView: View {
             case .filters:
                 FilterEditorView(model: connection)
             }
+        }
+        .task { await runSmokeTestIfRequested() }
+    }
+
+    /// Layout-Smoke-Test: `DXSpiderAdmin -uiSmokeTest <bereich>` startet im Demo-Backend,
+    /// verbindet sich und öffnet den genannten Sidebar-Bereich. Damit lässt sich eine
+    /// Ansicht ohne erreichbaren Node aufnehmen und prüfen (`scripts/uisnapshot.sh`).
+    /// Ohne das Argument passiert hier nichts.
+    private func runSmokeTestIfRequested() async {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let flag = arguments.firstIndex(of: "-uiSmokeTest"), flag + 1 < arguments.count,
+              let target = SidebarItem(rawValue: arguments[flag + 1])
+        else { return }
+
+        selection = target
+        connection.useDemoBackend = true
+        await connection.connect()
+
+        // Ohne LaunchServices platziert macOS das Fenster teils unter der Menüleiste.
+        if let window = NSApplication.shared.windows.first {
+            window.setFrame(NSRect(x: 120, y: 120, width: 1280, height: 820), display: true)
+        }
+
+        // Optional eine Abfrage mitlaufen lassen, damit der Schnappschuss auch die
+        // gefüllte Ausgabe zeigt: `-uiSmokeQuery show/node`.
+        if let flag = arguments.firstIndex(of: "-uiSmokeQuery"), flag + 1 < arguments.count,
+           let query = NodeQuery.query(id: arguments[flag + 1]) {
+            await connection.runQuery(query, argument: query.defaultArgument)
         }
     }
 
