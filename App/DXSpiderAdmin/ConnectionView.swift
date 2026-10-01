@@ -146,38 +146,6 @@ struct ConnectionView: View {
     }
 }
 
-/// Coloured connection-state indicator for the toolbar.
-struct StatusBadge: View {
-    let state: ConnectionState
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 9, height: 9)
-            Text(label).font(.callout.weight(.medium))
-        }
-    }
-
-    private var color: Color {
-        switch state {
-        case .ready, .busy: .green
-        case .connecting, .authenticating: .orange
-        case .failed: .red
-        case .disconnected: .secondary
-        }
-    }
-
-    private var label: String {
-        switch state {
-        case .disconnected: "Getrennt"
-        case .connecting: "Verbinde …"
-        case .authenticating: "Anmeldung …"
-        case .ready: "Bereit"
-        case .busy: "Beschäftigt …"
-        case .failed(let reason): "Fehler: \(reason)"
-        }
-    }
-}
-
 /// Compact, monospaced rendering of the command audit trail.
 struct AuditLogView: View {
     let entries: [AuditEntry]

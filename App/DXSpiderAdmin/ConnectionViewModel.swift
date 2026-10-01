@@ -75,6 +75,13 @@ final class ConnectionViewModel {
             && !(config.sysopCall ?? "").isEmpty
     }
 
+    /// Node-Bezeichnung für die Oberfläche: Sysop-Call bzw. Host, im Demo „Demo-Node“.
+    var nodeDisplayName: String {
+        if useDemoBackend { return "Demo-Node" }
+        if let call = config.sysopCall, !call.isEmpty { return call.uppercased() }
+        return config.host.isEmpty ? "Kein Node" : config.host
+    }
+
     var filteredUsers: [ClusterUser] {
         let query = userSearch.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return users }

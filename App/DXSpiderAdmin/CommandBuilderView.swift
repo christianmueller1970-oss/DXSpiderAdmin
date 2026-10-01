@@ -260,20 +260,6 @@ private struct MultiCommandSection: View {
     }
 }
 
-/// Dry-run preview of the exact line a control will send (Konzeptdokument §2).
-/// Shared with the info screen, so it stays internal rather than file-private.
-struct PreviewLine: View {
-    let command: DXCommand?
-
-    var body: some View {
-        if let command {
-            Label("Sendet: \(command.line)", systemImage: "arrow.right.circle")
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
 extension String {
     /// Whether the string is a plausible callsign (delegates to the Core heuristic).
     var isValidCallsign: Bool {
