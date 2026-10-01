@@ -70,6 +70,32 @@ Erzeugt `build/DXSpiderAdmin-<version>.dmg` mit „nach Programme ziehen"-Layout
 sie mit Developer ID, notarisiert und stapelt das Ticket. Ergebnis ist Gatekeeper-konform
 weitergebbar (auch offline).
 
+## Automatische Updates (Sparkle 2)
+
+Die App prüft über [Sparkle](https://sparkle-project.org) selbst auf neue Versionen
+(Menü «DXSpider Admin → Nach Updates suchen …», zusätzlich automatisch im Hintergrund).
+
+- **Update-Liste:** `appcast.xml` im Repo-Root, gelesen über
+  `https://raw.githubusercontent.com/christianmueller1970-oss/DXSpiderAdmin/main/appcast.xml`
+  (`SUFeedURL` in `App/Info.plist`). Das Repo ist öffentlich, damit das ohne Anmeldung geht.
+- **Downloads:** die DMG als Anhang des GitHub-Releases `v<version>`.
+- **Signatur:** Jede DMG wird zusätzlich mit einem EdDSA-Schlüssel signiert. Der private Teil
+  liegt **nur im Schlüsselbund** (Konto `DXSpiderAdmin`, angelegt mit
+  `generate_keys --account DXSpiderAdmin`), der öffentliche steht als `SUPublicEDKey` in
+  `App/Info.plist`. Geht der private Schlüssel verloren, können bestehende Installationen
+  keine Updates mehr annehmen → Sicherung exportieren
+  (`generate_keys --account DXSpiderAdmin -x <datei>`) und ausserhalb des Repos verwahren.
+- **Build-Nummer:** Sparkle vergleicht `CFBundleVersion` — vor jedem Release erhöhen.
+
+### Release-Ablauf
+
+1. `MARKETING_VERSION` und `CURRENT_PROJECT_VERSION` erhöhen, CHANGELOG-Abschnitt
+   `## [<version>] — <datum>` schreiben, committen und nach `main` pushen.
+2. `NOTARY_PROFILE=DXSpiderAdmin-Notary ./scripts/notarize.sh`
+3. `NOTARY_PROFILE=DXSpiderAdmin-Notary ./scripts/build-dmg.sh` — schreibt zusätzlich
+   `appcast.xml` (Release-Notes = CHANGELOG-Abschnitt).
+4. `./scripts/publish-release.sh` — Tag, GitHub-Release mit DMG, danach `appcast.xml` pushen.
+
 ## Prüfen
 
 ```sh

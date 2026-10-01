@@ -6,6 +6,16 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.3] — 2026-10-01
+
+### Added
+- **Automatische Updates** über Sparkle 2: Die App prüft selbst auf neue Versionen und
+  installiert sie auf Wunsch; zusätzlich Menüpunkt «Nach Updates suchen …».
+  Update-Liste (`appcast.xml`) und DMGs kommen direkt aus dem öffentlichen GitHub-Repo.
+- `scripts/publish-release.sh`: Tag, GitHub-Release mit DMG und Release-Notes, danach
+  Veröffentlichung der Update-Liste. `build-dmg.sh` signiert die DMG zusätzlich für Sparkle.
+- MIT-Lizenz.
+
 ## [0.2] — 2026-10-01
 
 ### Changed (Oberfläche aufgefrischt)

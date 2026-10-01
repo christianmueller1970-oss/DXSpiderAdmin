@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sparkle: Update-Liste im öffentlichen Repo, DMGs als GitHub-Release-Anhang. -->
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/christianmueller1970-oss/DXSpiderAdmin/main/appcast.xml</string>
+	<!-- Öffentlicher Teil des Update-Schlüssels; der private liegt nur im Schlüsselbund
+	     (generate_keys --account DXSpiderAdmin). -->
+	<key>SUPublicEDKey</key>
+	<string>s1/6W9jrLfujDLhEPzA8hiMEb02gFIf95zVzp4zQEVQ=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+</dict>
+</plist>
