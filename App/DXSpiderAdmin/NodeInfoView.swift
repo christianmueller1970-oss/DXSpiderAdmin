@@ -30,11 +30,7 @@ struct NodeInfoView: View {
             if model.isConnected {
                 content
             } else {
-                ContentUnavailableView(
-                    "Nicht verbunden",
-                    systemImage: "bolt.horizontal.circle",
-                    description: Text("Im Bereich „Verbindung“ verbinden, um den Node abzufragen.")
-                )
+                NotConnectedView(purpose: "um den Node abzufragen")
             }
         }
         .navigationTitle("Info & Diagnose")
@@ -89,19 +85,20 @@ struct NodeInfoView: View {
                 }
             }
         }
+        .background(Color(nsColor: .textBackgroundColor))
     }
 
     // MARK: Status-Kacheln
 
     private var statusTiles: some View {
         HStack(alignment: .top, spacing: 12) {
-            tile("Uptime", model.nodeStatus.uptime, "clock")
-            tile("User", model.nodeStatus.usersSummary, "person.2")
-            tile("Nodes", model.nodeStatus.nodesSummary, "network")
-            tile("Version", model.nodeStatus.versionSummary, "cpu",
+            tile("Uptime", model.nodeStatus.uptime, "clock", tint: .green)
+            tile("User", model.nodeStatus.usersSummary, "person.2", tint: .blue)
+            tile("Nodes", model.nodeStatus.nodesSummary, "network", tint: .purple)
+            tile("Version", model.nodeStatus.versionSummary, "cpu", tint: .orange,
                  detail: model.nodeStatus.gitVersion,
                  help: model.nodeStatus.versionCaveat)
-            tile("Node-Zeit", model.nodeStatus.utcTime, "globe")
+            tile("Node-Zeit", model.nodeStatus.utcTime, "globe", tint: .teal)
         }
         .padding()
     }
@@ -112,13 +109,19 @@ struct NodeInfoView: View {
         _ title: String,
         _ value: String?,
         _ symbol: String,
+        tint: Color,
         detail: String? = nil,
         help: String? = nil
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Label(title, systemImage: symbol)
-                    .font(.caption)
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 20, height: 20)
+                    .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                Text(title)
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
                 if help != nil {
                     Image(systemName: "info.circle")
@@ -128,6 +131,7 @@ struct NodeInfoView: View {
             }
             Text(value ?? "—")
                 .font(.title3.weight(.semibold))
+                .redacted(reason: value == nil && model.isRefreshing ? .placeholder : [])
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
@@ -140,8 +144,7 @@ struct NodeInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+        .card(padding: 10)
         .help(help ?? "")
     }
 
@@ -150,13 +153,17 @@ struct NodeInfoView: View {
     private var queryBar: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text("Schnellzugriff").font(.caption).foregroundStyle(.secondary)
+                Label("Schnellzugriff", systemImage: "bolt.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 ForEach(NodeQuery.favourites) { query in
                     Button(query.title) {
                         selectedID = query.id
                         argument = query.defaultArgument
                         run(query, argument: query.defaultArgument)
                     }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
                     .controlSize(.small)
                     .disabled(!model.isConnected || model.isQuerying)
                 }
@@ -181,7 +188,8 @@ struct NodeInfoView: View {
                         .onSubmit { if canRun { run(selected, argument: argument) } }
                 }
 
-                Button("Abrufen") { run(selected, argument: argument) }
+                Button("Abrufen", systemImage: "arrow.down.circle") { run(selected, argument: argument) }
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canRun)
 
@@ -214,15 +222,17 @@ struct NodeInfoView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Button("Kopieren", action: copyOutput)
-                    .controlSize(.small)
-                    .disabled(model.queryOutput.isEmpty)
-                Button("Sichern …") { isExporting = true }
-                    .controlSize(.small)
-                    .disabled(model.queryOutput.isEmpty)
-                Button("Leeren", action: model.clearQueryOutput)
-                    .controlSize(.small)
-                    .disabled(model.queryOutput.isEmpty)
+                Group {
+                    Button("Kopieren", systemImage: "doc.on.doc", action: copyOutput)
+                        .help("Ausgabe kopieren")
+                    Button("Sichern …", systemImage: "square.and.arrow.down") { isExporting = true }
+                        .help("Ausgabe als Textdatei sichern")
+                    Button("Leeren", systemImage: "trash", action: model.clearQueryOutput)
+                        .help("Ausgabe leeren")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .disabled(model.queryOutput.isEmpty)
             }
 
             if let error = model.lastError {
@@ -241,8 +251,9 @@ struct NodeInfoView: View {
     /// hängt er mittig statt links oben. Breite Tabellen brechen dadurch um; dafür ist
     /// die Ausgabe immer sichtbar.
     private var outputText: some View {
-        Text(model.queryOutput.isEmpty ? "—" : model.queryOutput)
+        Text(model.queryOutput.isEmpty ? "Noch keine Abfrage — oben eine wählen und abrufen." : model.queryOutput)
             .font(.system(.body, design: .monospaced))
+            .foregroundStyle(model.queryOutput.isEmpty ? .tertiary : .primary)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)

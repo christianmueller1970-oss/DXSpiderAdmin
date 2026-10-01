@@ -14,17 +14,14 @@ struct ConnectionView: View {
                 .frame(minWidth: 380)
         }
         .navigationTitle("Verbindung")
-        .toolbar {
-            ToolbarItem(placement: .status) {
-                StatusBadge(state: model.state)
-            }
-        }
     }
 
     // MARK: Controls
 
     private var controlPanel: some View {
         Form {
+            Section { header }
+
             Section("Backend") {
                 Picker("Quelle", selection: $model.useDemoBackend) {
                     Text("Demo (ohne Server)").tag(true)
@@ -35,16 +32,17 @@ struct ConnectionView: View {
             }
 
             if !model.useDemoBackend {
-                Section("Node (nicht-geheim)") {
-                    TextField("Host", text: $model.config.host)
-                    TextField("SSH-User", text: $model.config.user)
+                Section {
+                    TextField("Host", text: $model.config.host, prompt: Text("dxspider.example.net"))
+                    TextField("SSH-User", text: $model.config.user, prompt: Text("root"))
                     TextField("Port", value: $model.config.port, format: .number.grouping(.never))
-                    TextField("Sysop-Rufzeichen", text: Binding(
+                    TextField("Sysop-Call", text: Binding(
                         get: { model.config.sysopCall ?? "" },
                         set: { model.config.sysopCall = $0.isEmpty ? nil : $0 }
-                    ))
+                    ), prompt: Text("HB9XYZ-2"))
                     HStack {
-                        Button("Einstellungen sichern", action: model.saveSettings)
+                        Button("Einstellungen sichern", systemImage: "square.and.arrow.down",
+                               action: model.saveSettings)
                             .disabled(!model.configValid)
                         Spacer()
                     }
@@ -54,127 +52,129 @@ struct ConnectionView: View {
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                     }
-                    Text("Keine Keys/Passwörter — SSH-Auth über ssh-agent/~/.ssh.")
+                } header: {
+                    Text("Node")
+                } footer: {
+                    Label("Keine Keys oder Passwörter — die Anmeldung läuft über ssh-agent und ~/.ssh.",
+                          systemImage: "key")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .disabled(model.isConnected)
-                .textFieldStyle(.roundedBorder)
-            }
-
-            Section("Sicherheit") {
-                Toggle("Schreibende Befehle erlauben", isOn: $model.allowWrites)
-                    .disabled(model.isConnected)
-                Text(model.allowWrites
-                     ? "Destruktive Befehle sind freigeschaltet — mit Bedacht einsetzen."
-                     : "Read-only: destruktive Befehle werden blockiert.")
-                    .font(.caption)
-                    .foregroundStyle(model.allowWrites ? .orange : .secondary)
             }
 
             Section {
-                HStack {
-                    if model.isConnected {
-                        Button("Trennen", role: .destructive) {
-                            Task { await model.disconnect() }
-                        }
-                    } else {
-                        Button("Verbinden") {
-                            Task { await model.connect() }
-                        }
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(model.isBusy || (!model.useDemoBackend && !model.configValid))
-                    }
-                    if model.isBusy {
-                        ProgressView().controlSize(.small)
-                    }
+                Toggle(isOn: $model.allowWrites) {
+                    Label("Schreibende Befehle erlauben",
+                          systemImage: model.allowWrites ? "pencil.circle.fill" : "lock.fill")
                 }
-                if let error = model.lastError {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
-                        .font(.callout)
-                }
+                .tint(.orange)
+                .disabled(model.isConnected)
+            } header: {
+                Text("Sicherheit")
+            } footer: {
+                Text(model.allowWrites
+                     ? "Destruktive Befehle sind freigeschaltet — mit Bedacht einsetzen."
+                     : "Read-only: destruktive Befehle werden blockiert. Umschalten nur im getrennten Zustand.")
+                    .font(.caption)
+                    .foregroundStyle(model.allowWrites ? .orange : .secondary)
             }
         }
         .formStyle(.grouped)
     }
 
+    /// Kopf mit Node, Status und dem grossen Verbinden-/Trennen-Knopf.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: model.isConnected
+                      ? "antenna.radiowaves.left.and.right"
+                      : "antenna.radiowaves.left.and.right.slash")
+                    .font(.title2)
+                    .foregroundStyle(isIdle ? Color.secondary : Color.white)
+                    .frame(width: 44, height: 44)
+                    .background(isIdle ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(model.state.tint.gradient),
+                                in: Circle())
+                    .contentTransition(.symbolEffect(.replace))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(model.nodeDisplayName)
+                        .font(.title3.weight(.semibold).monospaced())
+                        .lineLimit(1)
+                    Text(endpoint)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                Spacer(minLength: 0)
+            }
+
+            StatusBadge(state: model.state)
+                .font(.callout.weight(.medium))
+
+            Group {
+                if model.isConnected {
+                    Button(role: .destructive) {
+                        Task { await model.disconnect() }
+                    } label: {
+                        Label("Trennen", systemImage: "bolt.horizontal.circle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                } else {
+                    Button {
+                        Task { await model.connect() }
+                    } label: {
+                        HStack {
+                            if model.isBusy { ProgressView().controlSize(.small) }
+                            Label("Verbinden", systemImage: "bolt.horizontal.circle.fill")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(model.isBusy || (!model.useDemoBackend && !model.configValid))
+                }
+            }
+            .controlSize(.large)
+
+            if let error = model.lastError {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.callout)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var isIdle: Bool {
+        if case .disconnected = model.state { true } else { false }
+    }
+
+    private var endpoint: String {
+        if model.useDemoBackend { return "Demo-Backend · ohne Server" }
+        let host = model.config.host.isEmpty ? "—" : model.config.host
+        let user = model.config.user.isEmpty ? "" : "\(model.config.user)@"
+        return "\(user)\(host):\(model.config.port)"
+    }
+
     // MARK: Console
 
     private var consolePanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Konsole").font(.headline)
-                Spacer()
-                Button("Leeren", action: model.clearConsole)
-                    .controlSize(.small)
-                    .disabled(model.consoleLog.isEmpty)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            ConsolePane(model: model, showsInput: true, showsError: false)
 
-            ScrollView {
-                Text(model.consoleLog.isEmpty ? "—" : model.consoleLog)
-                    .font(.system(.body, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-            }
-            .frame(maxHeight: .infinity)
-            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 6))
-
-            HStack {
-                Button("show/users") { Task { await model.send(.showUsers) } }
-                Button("show/nodes") { Task { await model.send(.showNodes) } }
-                Button("show/configuration") { Task { await model.send(.showConfiguration) } }
-            }
-            .controlSize(.small)
-            .disabled(!model.isConnected)
-
-            HStack {
-                TextField("Befehl eingeben …", text: $model.commandText)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { Task { await model.sendTypedCommand() } }
-                Button("Senden") { Task { await model.sendTypedCommand() } }
-                    .disabled(model.commandText.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .disabled(!model.isConnected)
-
-            DisclosureGroup("Audit-Log (\(model.auditEntries.count))") {
-                AuditLogView(entries: model.auditEntries)
+            DisclosureGroup {
+                ScrollView {
+                    AuditLogView(entries: model.auditEntries)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 160)
+            } label: {
+                Label("Audit-Log (\(model.auditEntries.count))", systemImage: "list.bullet.rectangle")
             }
         }
         .padding()
-    }
-}
-
-/// Coloured connection-state indicator for the toolbar.
-struct StatusBadge: View {
-    let state: ConnectionState
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 9, height: 9)
-            Text(label).font(.callout.weight(.medium))
-        }
-    }
-
-    private var color: Color {
-        switch state {
-        case .ready, .busy: .green
-        case .connecting, .authenticating: .orange
-        case .failed: .red
-        case .disconnected: .secondary
-        }
-    }
-
-    private var label: String {
-        switch state {
-        case .disconnected: "Getrennt"
-        case .connecting: "Verbinde …"
-        case .authenticating: "Anmeldung …"
-        case .ready: "Bereit"
-        case .busy: "Beschäftigt …"
-        case .failed(let reason): "Fehler: \(reason)"
-        }
     }
 }
 

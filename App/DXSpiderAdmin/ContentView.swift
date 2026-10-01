@@ -2,8 +2,8 @@ import SwiftUI
 import AppKit
 import DXSpiderCore
 
-/// Top-level navigation: fixed sidebar (Konzeptdokument §6) with a detail area.
-/// Only the connection area exists in M1; User/Node management arrives in M2.
+/// Top-level navigation: fixed sidebar (Konzeptdokument §6) with a detail area and a
+/// global connection status at the bottom of the sidebar.
 struct ContentView: View {
     @State private var selection: SidebarItem = .connection
     @State private var connection = ConnectionViewModel()
@@ -12,17 +12,11 @@ struct ContentView: View {
         NavigationSplitView {
             List(SidebarItem.allCases, selection: $selection) { item in
                 Label(item.title, systemImage: item.symbol)
+                    .badge(badge(for: item))
                     .tag(item)
             }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
-            .safeAreaInset(edge: .bottom) {
-                Text("DXSpider Admin \(Self.appVersion)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-            }
+            .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 280)
+            .safeAreaInset(edge: .bottom) { sidebarStatus }
         } detail: {
             switch selection {
             case .connection:
@@ -39,7 +33,45 @@ struct ContentView: View {
                 FilterEditorView(model: connection)
             }
         }
+        .environment(\.openConnectionArea) { selection = .connection }
         .task { await runSmokeTestIfRequested() }
+    }
+
+    /// Globaler Status unten in der Sidebar: mit welchem Node die App spricht, ob die
+    /// Verbindung steht und ob geschrieben werden darf — sichtbar in jedem Bereich.
+    private var sidebarStatus: some View {
+        Button { selection = .connection } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Text(connection.nodeDisplayName)
+                        .font(.callout.weight(.semibold).monospaced())
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    ModePill(allowWrites: connection.allowWrites)
+                }
+                StatusBadge(state: connection.state)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("DXSpider Admin \(Self.appVersion)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card(padding: 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Zur Verbindung")
+        .padding(.horizontal, 10)
+        .padding(.bottom, 10)
+    }
+
+    /// Zähler hinter dem Sidebar-Eintrag, sobald Daten geladen sind.
+    private func badge(for item: SidebarItem) -> Int {
+        switch item {
+        case .users: connection.users.count
+        default: 0
+        }
     }
 
     /// Layout-Smoke-Test: `DXSpiderAdmin -uiSmokeTest <bereich>` startet im Demo-Backend,

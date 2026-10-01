@@ -28,18 +28,14 @@ struct FilterEditorView: View {
         Group {
             if model.isConnected {
                 HSplitView {
-                    form
-                        .frame(minWidth: 340, idealWidth: 390, maxWidth: 470)
-                    console
+                    editor
+                        .frame(minWidth: 360, idealWidth: 420, maxWidth: 500)
+                    ConsolePane(model: model)
                         .frame(minWidth: 360)
                         .padding()
                 }
             } else {
-                ContentUnavailableView(
-                    "Nicht verbunden",
-                    systemImage: "bolt.horizontal.circle",
-                    description: Text("Im Bereich „Verbindung“ verbinden, um Filter zu setzen.")
-                )
+                NotConnectedView(purpose: "um Filter zu setzen")
             }
         }
         .navigationTitle("Filter-Editor")
@@ -57,101 +53,103 @@ struct FilterEditorView: View {
         }
     }
 
-    // MARK: Form
+    // MARK: Editor
 
-    private var form: some View {
-        Form {
-            if !model.allowWrites {
-                Section {
-                    Label("Read-only — Filter können nicht verändert werden.", systemImage: "lock.fill")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            }
+    private var editor: some View {
+        VStack(spacing: 0) {
+            ModeBanner(allowWrites: model.allowWrites, blocked: "Filter können nicht verändert werden")
+                .padding([.horizontal, .top])
 
-            Section("Regel") {
-                Picker("Aktion", selection: $action) {
-                    ForEach(SpotFilter.Action.allCases) { action in
-                        Text(action == .accept ? "Accept" : "Reject").tag(action)
+            Form {
+                Section("Regel") {
+                    Picker("Aktion", selection: $action) {
+                        ForEach(SpotFilter.Action.allCases) { action in
+                            Label(action == .accept ? "Accept" : "Reject",
+                                  systemImage: action == .accept ? "checkmark.circle" : "xmark.circle")
+                                .tag(action)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Stepper(value: $slot, in: 0...9) {
+                        LabeledContent("Slot") {
+                            Text("\(slot)").font(.body.monospacedDigit().weight(.semibold))
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-                Stepper("Slot: \(slot)", value: $slot, in: 0...9)
-            }
 
-            Section("Bänder") {
-                ForEach(SpotFilter.Band.allCases) { band in
-                    Toggle(band.displayName, isOn: Binding(
-                        get: { bands.contains(band) },
-                        set: { isOn in
-                            if isOn { bands.insert(band) } else { bands.remove(band) }
+                Section {
+                    HStack(spacing: 8) {
+                        ForEach(SpotFilter.Band.allCases) { band in
+                            BandChip(title: band.displayName, isOn: Binding(
+                                get: { bands.contains(band) },
+                                set: { isOn in
+                                    if isOn { bands.insert(band) } else { bands.remove(band) }
+                                }
+                            ))
                         }
-                    ))
+                        Spacer()
+                    }
+                } header: {
+                    Text("Bänder")
+                } footer: {
+                    Text("Keine Auswahl = alle Bänder.")
+                }
+
+                Section {
+                    TextField("Spotter (by)", text: $spotterText, prompt: Text("DL1ABC, HB9XYZ"))
+                    TextField("Origin (Node)", text: $originText, prompt: Text("HB9HJI-2"))
+                } header: {
+                    Text("Stationen")
+                } footer: {
+                    Text("Optional, mehrere Rufzeichen mit Komma trennen.")
+                }
+
+                Section("Vorschau") {
+                    if let command = filter.command {
+                        PreviewLine(command: command)
+                    } else {
+                        Text("Keine Kriterien gewählt.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Button(action == .accept ? "Accept anwenden" : "Reject anwenden",
+                               systemImage: "line.3.horizontal.decrease.circle.fill") {
+                            if let command = filter.command { pending = command }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(!model.allowWrites || filter.command == nil)
+
+                        Button("Slot \(slot) leeren", systemImage: "eraser", role: .destructive) {
+                            pending = filter.clearCommand
+                        }
+                        .disabled(!model.allowWrites)
+                    }
                 }
             }
-
-            Section("Stationen (optional, kommagetrennt)") {
-                TextField("Spotter (by)", text: $spotterText)
-                    .textFieldStyle(.roundedBorder)
-                TextField("Origin (Node)", text: $originText)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            Section("Vorschau") {
-                if let line = filter.command?.line {
-                    Label("Sendet: \(line)", systemImage: "arrow.right.circle")
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                } else {
-                    Text("Keine Kriterien gewählt.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section {
-                Button(action == .accept ? "Accept anwenden" : "Reject anwenden") {
-                    if let command = filter.command { pending = command }
-                }
-                .disabled(!model.allowWrites || filter.command == nil)
-
-                Button("Slot \(slot) leeren", role: .destructive) {
-                    pending = filter.clearCommand
-                }
-                .disabled(!model.allowWrites)
-            }
+            .formStyle(.grouped)
         }
-        .formStyle(.grouped)
     }
+}
 
-    // MARK: Console
+/// Umschaltbarer Chip für ein Band (HF/VHF/UHF).
+private struct BandChip: View {
+    let title: String
+    @Binding var isOn: Bool
 
-    private var console: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Konsole").font(.headline)
-                Spacer()
-                Button("Leeren", action: model.clearConsole)
-                    .controlSize(.small)
-                    .disabled(model.consoleLog.isEmpty)
-            }
-            ScrollView {
-                Text(model.consoleLog.isEmpty ? "—" : model.consoleLog)
-                    .font(.system(.body, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-            }
-            .frame(maxHeight: .infinity)
-            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 6))
-
-            if let error = model.lastError {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .font(.callout)
-            }
+    var body: some View {
+        Button { isOn.toggle() } label: {
+            Label(title, systemImage: isOn ? "checkmark" : "plus")
+                .font(.callout.weight(.medium))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .foregroundStyle(isOn ? Color.white : Color.primary)
+                .background(isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.fill.tertiary),
+                            in: Capsule())
+                .contentShape(Capsule())
         }
+        .buttonStyle(.plain)
+        .animation(.snappy(duration: 0.15), value: isOn)
     }
 }
 

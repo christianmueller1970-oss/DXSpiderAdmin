@@ -6,6 +6,23 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Changed (Oberfläche aufgefrischt)
+- **Globaler Status in der Sidebar**: Node, Verbindungszustand und Modus-Pille
+  (Read-only / Schreiben) sind in jedem Bereich sichtbar; Klick führt zur Verbindung.
+  „User & Nodes“ zeigt die Zahl verbundener User als Badge.
+- **Einheitliche Bausteine** (`DesignKit.swift`): ein Modus-Hinweis mit „Freischalten …“-Link
+  statt drei unterschiedlicher Read-only-Leisten, „Nicht verbunden“-Platzhalter mit Sprung
+  zur Verbindung, Karten-Stil und eine gemeinsame Konsole.
+- **Konsole**: Terminal-Fläche mit eingefärbten Zeilen (gesendet, Fehler, gesperrt, Erfolg),
+  scrollt automatisch ans Ende; auf der Verbindungsseite mit Eingabezeile und Schnellbefehlen.
+- **Verbindung**: Kopfkarte mit Node, Endpunkt, Status und grossem Verbinden-/Trennen-Knopf.
+- **Command Builder**: Bereiche (Registrierung, Sperrlisten, Abfragen, Frei) per
+  Segment-Umschalter statt einer langen Liste; kurze Labels mit Platzhaltern.
+- **User & Nodes / Sperrlisten**: Tabellen mit Spalten, Zählern und Leer-Zuständen
+  (laden, keine Treffer, leer).
+- **Filter-Editor**: Bänder als Chips, Befehlsvorschau als Code-Zeile.
+- **Info & Diagnose**: farbige Kachel-Symbole, Schnellzugriff als Chips, Ausgabe im Konsolen-Look.
+
 ### Added
 - **Bereich „Info & Diagnose"**: Status-Kacheln (Uptime, User, Nodes, Version, Node-Zeit) aus
   `show/cluster` + `show/version` + `show/time`, dazu ein gruppiertes Dropdown über den

@@ -11,23 +11,35 @@ struct CommandBuilderView: View {
     @State private var routeCall = ""
     @State private var rawText = ""
     @State private var pending: DXCommand?
+    @State private var area: Area = .registration
+    @State private var blockKind: BlockListKind = .badSpotter
+
+    /// Die Abschnitte des Builders, umschaltbar statt untereinander gestapelt.
+    enum Area: String, CaseIterable, Identifiable {
+        case registration, blockLists, queries, raw
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .registration: "Registrierung"
+            case .blockLists: "Sperrlisten"
+            case .queries: "Abfragen"
+            case .raw: "Frei"
+            }
+        }
+    }
 
     var body: some View {
         Group {
             if model.isConnected {
                 HSplitView {
-                    form
-                        .frame(minWidth: 340, idealWidth: 390, maxWidth: 470)
-                    console
+                    builder
+                        .frame(minWidth: 360, idealWidth: 420, maxWidth: 500)
+                    ConsolePane(model: model)
                         .frame(minWidth: 360)
                         .padding()
                 }
             } else {
-                ContentUnavailableView(
-                    "Nicht verbunden",
-                    systemImage: "bolt.horizontal.circle",
-                    description: Text("Im Bereich „Verbindung“ verbinden, um Befehle zu senden.")
-                )
+                NotConnectedView(purpose: "um Befehle zu senden")
             }
         }
         .navigationTitle("Command Builder")
@@ -45,132 +57,117 @@ struct CommandBuilderView: View {
         }
     }
 
-    // MARK: Form
+    // MARK: Builder
 
-    private var form: some View {
-        Form {
-            if !model.allowWrites {
-                Section {
-                    Label("Read-only — Registrierungs- und Schreibbefehle sind deaktiviert.",
-                          systemImage: "lock.fill")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+    private var builder: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 10) {
+                ModeBanner(allowWrites: model.allowWrites,
+                           blocked: "Schreibbefehle gesperrt")
+                Picker("Bereich", selection: $area) {
+                    ForEach(Area.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .padding([.horizontal, .top])
+
+            Form {
+                switch area {
+                case .registration: registrationSections
+                case .blockLists: blockListSections
+                case .queries: querySections
+                case .raw: rawSections
                 }
             }
-
-            Section("Registrierung") {
-                TextField("Rufzeichen (mehrere mit Leerzeichen)", text: $registerCalls)
-                    .textFieldStyle(.roundedBorder)
-                PreviewLine(command: registerList.isEmpty ? nil : .setRegister(callsigns: registerList))
-                HStack {
-                    Button("Registrieren") { pending = .setRegister(callsigns: registerList) }
-                        .disabled(!model.allowWrites || !registerCallsValid)
-                    Button("Aufheben", role: .destructive) { pending = .unsetRegister(callsigns: registerList) }
-                        .disabled(!model.allowWrites || !registerCallsValid)
-                }
-                // show/registered ist read-only → direkt senden, keine Bestätigung.
-                // Der Node unterstützt hier keine Wildcards/Mehrfach-Calls (Leerzeichen & '*'
-                // werden gestrippt); leer = alle, ein exaktes Rufzeichen = genau dieses prüfen.
-                HStack {
-                    TextField("Einzelnes Rufzeichen prüfen (optional)", text: $registeredFilter)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Registrierte anzeigen") {
-                        Task { await model.send(.showRegistered(call: optional(registeredFilter))) }
-                    }
-                }
-            }
-
-            // Listen-Pflege (jeweils mehrere Einträge mit Leerzeichen). show/* ignorieren
-            // node-seitig Argumente → listen immer alles. Schreiben braucht Schreibmodus.
-            MultiCommandSection(
-                title: "Bad Spotter", placeholder: "Rufzeichen (mehrere mit Leerzeichen)",
-                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad Spotter anzeigen",
-                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
-                makeSet: { .setBadSpotter(callsigns: $0) }, makeUnset: { .unsetBadSpotter(callsigns: $0) },
-                showCommand: .showBadSpotter, send: send
-            )
-            MultiCommandSection(
-                title: "Lockout (User aussperren)", placeholder: "Rufzeichen (mehrere mit Leerzeichen)",
-                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Lockouts anzeigen",
-                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
-                makeSet: { .setLockout(callsigns: $0) }, makeUnset: { .unsetLockout(callsigns: $0) },
-                showCommand: .showLockout, send: send
-            )
-            MultiCommandSection(
-                title: "Bad Node", placeholder: "Node-Rufzeichen (mehrere mit Leerzeichen)",
-                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad Nodes anzeigen",
-                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
-                makeSet: { .setBadNode(callsigns: $0) }, makeUnset: { .unsetBadNode(callsigns: $0) },
-                showCommand: .showBadNode, send: send
-            )
-            MultiCommandSection(
-                title: "Bad DX (gefilterte DX-Calls)", placeholder: "Rufzeichen (mehrere mit Leerzeichen)",
-                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad DX anzeigen",
-                allowWrites: model.allowWrites, requireCallsigns: true, pending: $pending,
-                makeSet: { .setBadDX(callsigns: $0) }, makeUnset: { .unsetBadDX(callsigns: $0) },
-                showCommand: .showBadDX, send: send
-            )
-            MultiCommandSection(
-                title: "Bad Words (Wortfilter)", placeholder: "Wörter (mehrere mit Leerzeichen)",
-                setLabel: "Sperren", unsetLabel: "Freigeben", showLabel: "Bad Words anzeigen",
-                allowWrites: model.allowWrites, requireCallsigns: false, pending: $pending,
-                makeSet: { .setBadWord(words: $0) }, makeUnset: { .unsetBadWord(words: $0) },
-                showCommand: .showBadWord, send: send
-            )
-
-            Section("Abfragen (read-only)") {
-                Button("show/configuration") {
-                    Task { await model.send(.showConfiguration) }
-                }
-                HStack {
-                    TextField("Rufzeichen für Route", text: $routeCall)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Route") {
-                        Task { await model.send(.showRoute(callsign: routeCall)) }
-                    }
-                    .disabled(!routeCall.isValidCallsign)
-                }
-                PreviewLine(command: routeCall.isValidCallsign ? .showRoute(callsign: routeCall) : nil)
-            }
-
-            Section("Freie Eingabe") {
-                TextField("Befehl …", text: $rawText)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit(submitRaw)
-                PreviewLine(command: rawTextTrimmed.isEmpty ? nil : .raw(rawTextTrimmed))
-                Button("Senden", action: submitRaw)
-                    .disabled(rawTextTrimmed.isEmpty)
-            }
+            .formStyle(.grouped)
         }
-        .formStyle(.grouped)
     }
 
-    // MARK: Console
-
-    private var console: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    @ViewBuilder private var registrationSections: some View {
+        Section {
+            TextField("Rufzeichen", text: $registerCalls, prompt: Text("DL1ABC HB9XYZ …"))
+            PreviewLine(command: registerList.isEmpty ? nil : .setRegister(callsigns: registerList))
             HStack {
-                Text("Konsole").font(.headline)
-                Spacer()
-                Button("Leeren", action: model.clearConsole)
-                    .controlSize(.small)
-                    .disabled(model.consoleLog.isEmpty)
+                Button("Registrieren", systemImage: "checkmark.seal") {
+                    pending = .setRegister(callsigns: registerList)
+                }
+                .disabled(!model.allowWrites || !registerCallsValid)
+                Button("Aufheben", systemImage: "xmark.seal", role: .destructive) {
+                    pending = .unsetRegister(callsigns: registerList)
+                }
+                .disabled(!model.allowWrites || !registerCallsValid)
             }
-            ScrollView {
-                Text(model.consoleLog.isEmpty ? "—" : model.consoleLog)
-                    .font(.system(.body, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-            }
-            .frame(maxHeight: .infinity)
-            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 6))
+        } header: {
+            Text("Spotting-Recht vergeben")
+        } footer: {
+            Text("Mehrere Rufzeichen mit Leerzeichen trennen.")
+        }
 
-            if let error = model.lastError {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .font(.callout)
+        // show/registered ist read-only → direkt senden, keine Bestätigung.
+        // Der Node unterstützt hier keine Wildcards/Mehrfach-Calls (Leerzeichen & '*'
+        // werden gestrippt); leer = alle, ein exaktes Rufzeichen = genau dieses prüfen.
+        Section {
+            TextField("Rufzeichen", text: $registeredFilter, prompt: Text("leer = alle"))
+            Button("Registrierte anzeigen", systemImage: "list.bullet") {
+                Task { await model.send(.showRegistered(call: optional(registeredFilter))) }
             }
+        } header: {
+            Text("Prüfen (read-only)")
+        } footer: {
+            Text("Nur ein exaktes Rufzeichen — der Node kennt hier keine Wildcards.")
+        }
+    }
+
+    @ViewBuilder private var blockListSections: some View {
+        Section {
+            Picker("Liste", selection: $blockKind) {
+                ForEach(BlockListKind.allCases) { Text($0.title).tag($0) }
+            }
+        } footer: {
+            Text(blockKind.explanation)
+        }
+
+        // Listen-Pflege (jeweils mehrere Einträge mit Leerzeichen). show/* ignorieren
+        // node-seitig Argumente → listen immer alles. Schreiben braucht Schreibmodus.
+        MultiCommandSection(kind: blockKind, allowWrites: model.allowWrites,
+                            pending: $pending, send: send)
+            .id(blockKind)
+    }
+
+    @ViewBuilder private var querySections: some View {
+        Section("Konfiguration") {
+            Button("show/configuration", systemImage: "point.3.connected.trianglepath.dotted") {
+                Task { await model.send(.showConfiguration) }
+            }
+        }
+        Section {
+            TextField("Rufzeichen", text: $routeCall, prompt: Text("HB9XYZ"))
+                .onSubmit { if routeCall.isValidCallsign { send(.showRoute(callsign: routeCall)) } }
+            PreviewLine(command: routeCall.isValidCallsign ? .showRoute(callsign: routeCall) : nil)
+            Button("Route abfragen", systemImage: "arrow.triangle.branch") {
+                send(.showRoute(callsign: routeCall))
+            }
+            .disabled(!routeCall.isValidCallsign)
+        } header: {
+            Text("Route")
+        } footer: {
+            Text("Über welchen Node eine Station erreichbar ist.")
+        }
+    }
+
+    @ViewBuilder private var rawSections: some View {
+        Section {
+            TextField("Befehl", text: $rawText, prompt: Text("show/dx 10"))
+                .font(.body.monospaced())
+                .onSubmit(submitRaw)
+            PreviewLine(command: rawTextTrimmed.isEmpty ? nil : .raw(rawTextTrimmed))
+            Button("Senden", systemImage: "paperplane", action: submitRaw)
+                .disabled(rawTextTrimmed.isEmpty)
+        } header: {
+            Text("Freie Eingabe")
+        } footer: {
+            Text("Unbekannte Befehle gelten als destruktiv und werden vor dem Senden bestätigt.")
         }
     }
 
@@ -214,22 +211,12 @@ struct CommandBuilderView: View {
     }
 }
 
-/// Reusable section for a list-style admin command: a multi-token field with set/unset
-/// (destructive → routed through the parent's confirmation) and a read-only "show all"
-/// button. Used for Bad Spotter, Lockout, Bad Node, Bad DX and Bad Words.
+/// Section for one block list: a multi-token field with set/unset (destructive → routed
+/// through the parent's confirmation) and a read-only "show all" button.
 private struct MultiCommandSection: View {
-    let title: String
-    let placeholder: String
-    let setLabel: String
-    let unsetLabel: String
-    let showLabel: String
+    let kind: BlockListKind
     let allowWrites: Bool
-    /// Free-form bad words skip the callsign check; everything else requires callsign-shaped tokens.
-    let requireCallsigns: Bool
     @Binding var pending: DXCommand?
-    let makeSet: ([String]) -> DXCommand
-    let makeUnset: ([String]) -> DXCommand
-    let showCommand: DXCommand
     let send: (DXCommand) -> Void
 
     @State private var text = ""
@@ -239,37 +226,34 @@ private struct MultiCommandSection: View {
     }
     private var valid: Bool {
         guard !tokens.isEmpty else { return false }
-        guard requireCallsigns else { return true }
+        guard kind.requiresCallsigns else { return true }
         return tokens.allSatisfy { Callsign.isLikely(Callsign.normalize($0)) }
     }
 
     var body: some View {
-        Section(title) {
-            TextField(placeholder, text: $text)
-                .textFieldStyle(.roundedBorder)
-            PreviewLine(command: tokens.isEmpty ? nil : makeSet(tokens))
+        Section {
+            TextField(kind.requiresCallsigns ? "Rufzeichen" : "Wörter", text: $text,
+                      prompt: Text(kind.requiresCallsigns ? "DL1ABC HB9XYZ …" : "wort1 wort2 …"))
+            PreviewLine(command: tokens.isEmpty ? nil : kind.set(tokens))
             HStack {
-                Button(setLabel, role: .destructive) { pending = makeSet(tokens) }
-                    .disabled(!allowWrites || !valid)
-                Button(unsetLabel) { pending = makeUnset(tokens) }
-                    .disabled(!allowWrites || !valid)
+                Button("Sperren", systemImage: "nosign", role: .destructive) {
+                    pending = kind.set(tokens)
+                }
+                .disabled(!allowWrites || !valid)
+                Button("Freigeben", systemImage: "checkmark.circle") {
+                    pending = kind.unset(tokens)
+                }
+                .disabled(!allowWrites || !valid)
             }
-            // read-only → direkt senden (Node ignoriert hier Argumente, listet alles).
-            Button(showLabel) { send(showCommand) }
+        } header: {
+            Text("Einträge ändern")
+        } footer: {
+            Text("Mehrere Einträge mit Leerzeichen trennen.")
         }
-    }
-}
 
-/// Dry-run preview of the exact line a control will send (Konzeptdokument §2).
-/// Shared with the info screen, so it stays internal rather than file-private.
-struct PreviewLine: View {
-    let command: DXCommand?
-
-    var body: some View {
-        if let command {
-            Label("Sendet: \(command.line)", systemImage: "arrow.right.circle")
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
+        Section("Anzeigen (read-only)") {
+            // read-only → direkt senden (Node ignoriert hier Argumente, listet alles).
+            Button("\(kind.title) anzeigen", systemImage: "list.bullet") { send(kind.showCommand) }
         }
     }
 }
