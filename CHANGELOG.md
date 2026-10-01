@@ -6,6 +6,8 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.2] — 2026-10-01
+
 ### Changed (Oberfläche aufgefrischt)
 - **Globaler Status in der Sidebar**: Node, Verbindungszustand und Modus-Pille
   (Read-only / Schreiben) sind in jedem Bereich sichtbar; Klick führt zur Verbindung.
