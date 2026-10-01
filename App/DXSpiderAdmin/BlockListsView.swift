@@ -42,13 +42,13 @@ struct BlockListsView: View {
         ) { entry in
             Button("Entfernen", role: .destructive) {
                 Task {
-                    await model.removeBlockEntry(remove: kind.unset(entry), reload: kind.showCommand)
+                    await model.removeBlockEntry(remove: kind.unset([entry]), reload: kind.showCommand)
                     pendingRemove = nil
                 }
             }
             Button("Abbrechen", role: .cancel) { }
         } message: { entry in
-            Text("Sendet „\(kind.unset(entry).line)“ — destruktiver Befehl.")
+            Text("Sendet „\(kind.unset([entry]).line)“ — destruktiver Befehl.")
         }
     }
 
@@ -118,13 +118,36 @@ enum BlockListKind: String, CaseIterable, Identifiable {
         }
     }
 
-    func unset(_ entry: String) -> DXCommand {
+    /// Bad Words sind freie Wörter, alles andere muss wie ein Rufzeichen aussehen.
+    var requiresCallsigns: Bool { self != .badWord }
+
+    var explanation: String {
         switch self {
-        case .badSpotter: .unsetBadSpotter(callsigns: [entry])
-        case .lockout: .unsetLockout(callsigns: [entry])
-        case .badNode: .unsetBadNode(callsigns: [entry])
-        case .badDX: .unsetBadDX(callsigns: [entry])
-        case .badWord: .unsetBadWord(words: [entry])
+        case .badSpotter: "Spots dieser Stationen werden verworfen."
+        case .lockout: "Diese User können sich nicht mehr am Node anmelden."
+        case .badNode: "Von diesen Nodes werden keine Spots übernommen."
+        case .badDX: "Spots auf diese DX-Rufzeichen werden verworfen."
+        case .badWord: "Spots mit diesen Wörtern im Kommentar werden verworfen."
+        }
+    }
+
+    func set(_ entries: [String]) -> DXCommand {
+        switch self {
+        case .badSpotter: .setBadSpotter(callsigns: entries)
+        case .lockout: .setLockout(callsigns: entries)
+        case .badNode: .setBadNode(callsigns: entries)
+        case .badDX: .setBadDX(callsigns: entries)
+        case .badWord: .setBadWord(words: entries)
+        }
+    }
+
+    func unset(_ entries: [String]) -> DXCommand {
+        switch self {
+        case .badSpotter: .unsetBadSpotter(callsigns: entries)
+        case .lockout: .unsetLockout(callsigns: entries)
+        case .badNode: .unsetBadNode(callsigns: entries)
+        case .badDX: .unsetBadDX(callsigns: entries)
+        case .badWord: .unsetBadWord(words: entries)
         }
     }
 }
