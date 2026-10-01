@@ -69,5 +69,10 @@ DXSpiderAdmin/
 ├─ App/         SwiftUI-App-Target (DXSpiderAdmin.xcodeproj)
 ├─ scripts/     Notarisierungs-Skript & ExportOptions-Vorlage
 ├─ CHANGELOG.md
+├─ LICENSE
 └─ README.md
 ```
+
+## Lizenz
+
+MIT — siehe [LICENSE](LICENSE). © 2026 Christian Mueller, HB9HJI.
