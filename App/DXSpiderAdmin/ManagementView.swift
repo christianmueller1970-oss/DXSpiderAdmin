@@ -26,11 +26,7 @@ struct ManagementView: View {
             if model.isConnected {
                 content
             } else {
-                ContentUnavailableView(
-                    "Nicht verbunden",
-                    systemImage: "bolt.horizontal.circle",
-                    description: Text("Im Bereich „Verbindung“ verbinden, um User und Nodes zu laden.")
-                )
+                NotConnectedView(purpose: "um User und Nodes zu laden")
             }
         }
         .navigationTitle("User & Nodes")
@@ -63,110 +59,141 @@ struct ManagementView: View {
 
     @ViewBuilder private var content: some View {
         VStack(spacing: 0) {
-            Picker("Ansicht", selection: $tab) {
-                ForEach(Tab.allCases) { Text($0.title).tag($0) }
+            VStack(spacing: 10) {
+                HStack {
+                    Picker("Ansicht", selection: $tab) {
+                        ForEach(Tab.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                    Spacer()
+                    Text(summary)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                ModeBanner(allowWrites: model.allowWrites, blocked: "Ändern und Trennen gesperrt")
             }
-            .pickerStyle(.segmented)
-            .padding([.horizontal, .top])
-
-            if !model.allowWrites {
-                readOnlyBanner
-            }
+            .padding()
 
             switch tab {
-            case .users: usersList
-            case .nodes: nodesList
-            case .registered: registeredList
+            case .users: usersTable
+            case .nodes: nodesTable
+            case .registered: registeredTable
             }
         }
     }
 
-    private var readOnlyBanner: some View {
-        Label("Read-only — destruktive Aktionen sind deaktiviert. Im Bereich „Verbindung“ freischalten.",
-              systemImage: "lock.fill")
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(8)
-            .background(.quaternary.opacity(0.25))
+    /// Kurzer Zähler rechts neben dem Umschalter.
+    private var summary: String {
+        switch tab {
+        case .users:
+            return "\(model.users.count) User verbunden"
+        case .nodes:
+            let connected = model.nodes.filter(\.isConnected).count
+            return "\(model.nodes.count) Nodes · \(connected) verbunden"
+        case .registered:
+            let rule = switch model.registrationRequired {
+            case true?: " · Registrierung erforderlich"
+            case false?: " · Registrierung nicht erforderlich"
+            case nil: ""
+            }
+            return "\(model.registered.count) registriert\(rule)"
+        }
     }
 
-    private var usersList: some View {
-        List {
-            if model.filteredUsers.isEmpty {
-                Text(model.isRefreshing ? "Lade …" : "Keine User.")
-                    .foregroundStyle(.secondary)
+    private var usersTable: some View {
+        Table(model.filteredUsers) {
+            TableColumn("Rufzeichen") { user in
+                CallsignCell(callsign: user.callsign, systemImage: "person.fill")
             }
-            ForEach(model.filteredUsers) { user in
-                HStack {
-                    Text(user.callsign).font(.body.monospaced())
-                    Spacer()
-                    Menu("Priv setzen") {
+            TableColumn("Aktionen") { user in
+                HStack(spacing: 10) {
+                    Menu {
                         ForEach(privilegeChoices, id: \.rawValue) { level in
                             Button("Level \(level.rawValue)\(levelHint(level))") {
                                 pending = .setPriv(level, user.callsign)
                             }
                         }
+                    } label: {
+                        Label("Privileg", systemImage: "shield.lefthalf.filled")
                     }
+                    .menuStyle(.borderlessButton)
                     .fixedSize()
-                    .disabled(!model.allowWrites)
-                    Button("Trennen", role: .destructive) {
+                    .help("Privileg-Level setzen")
+
+                    Button("Trennen", systemImage: "bolt.horizontal.circle", role: .destructive) {
                         pending = .boot(user.callsign)
                     }
-                    .disabled(!model.allowWrites)
+                    .buttonStyle(.borderless)
+                    .help("Station vom Node trennen")
                 }
+                .disabled(!model.allowWrites)
             }
+            .width(min: 180, ideal: 200, max: 240)
+        }
+        .tableStyle(.inset)
+        .alternatingRowBackgrounds()
+        .overlay {
+            ListPlaceholder(isEmpty: model.filteredUsers.isEmpty, isLoading: model.isRefreshing,
+                            search: model.userSearch, title: "Keine User verbunden",
+                            systemImage: "person.2.slash")
         }
         .searchable(text: $model.userSearch, prompt: "User filtern")
     }
 
-    private var nodesList: some View {
-        List {
-            if model.filteredNodes.isEmpty {
-                Text(model.isRefreshing ? "Lade …" : "Keine Nodes.")
-                    .foregroundStyle(.secondary)
-            }
-            ForEach(model.filteredNodes) { node in
-                HStack(spacing: 8) {
-                    Image(systemName: node.isConnected ? "circle.fill" : "circle")
-                        .foregroundStyle(node.isConnected ? .green : .secondary)
-                        .font(.caption2)
-                    Text(node.callsign).font(.body.monospaced())
-                    if let version = node.version {
-                        Text(version).font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
+    private var nodesTable: some View {
+        Table(model.filteredNodes) {
+            TableColumn("Status") { node in
+                HStack(spacing: 6) {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(node.isConnected ? Color.green : Color.secondary.opacity(0.5))
                     Text(node.isConnected ? "verbunden" : "getrennt")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(node.isConnected ? .primary : .secondary)
                 }
             }
+            .width(min: 90, ideal: 110, max: 130)
+            TableColumn("Node") { node in
+                CallsignCell(callsign: node.callsign, systemImage: "server.rack")
+            }
+            TableColumn("Version") { node in
+                Text(node.version ?? "—")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .tableStyle(.inset)
+        .alternatingRowBackgrounds()
+        .overlay {
+            ListPlaceholder(isEmpty: model.filteredNodes.isEmpty, isLoading: model.isRefreshing,
+                            search: model.nodeSearch, title: "Keine Nodes",
+                            systemImage: "network.slash")
         }
         .searchable(text: $model.nodeSearch, prompt: "Nodes filtern")
     }
 
-    private var registeredList: some View {
-        List {
-            Section {
-                if model.filteredRegistered.isEmpty {
-                    Text(model.isRefreshing ? "Lade …" : "Keine registrierten Rufzeichen.")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(model.filteredRegistered) { user in
-                    HStack {
-                        Text(user.callsign).font(.body.monospaced())
-                        Spacer()
-                        Button("Aufheben", role: .destructive) {
-                            pending = .unregister(user.callsign)
-                        }
-                        .disabled(!model.allowWrites)
-                    }
-                }
-            } header: {
-                if let required = model.registrationRequired {
-                    Text("Registrierung: \(required ? "erforderlich" : "nicht erforderlich") · \(model.registered.count) Calls")
-                }
+    private var registeredTable: some View {
+        Table(model.filteredRegistered) {
+            TableColumn("Rufzeichen") { user in
+                CallsignCell(callsign: user.callsign, systemImage: "checkmark.seal.fill")
             }
+            TableColumn("Aktion") { user in
+                Button("Aufheben", systemImage: "xmark.seal", role: .destructive) {
+                    pending = .unregister(user.callsign)
+                }
+                .buttonStyle(.borderless)
+                .disabled(!model.allowWrites)
+                .help("Registrierung aufheben")
+            }
+            .width(min: 110, ideal: 120, max: 140)
+        }
+        .tableStyle(.inset)
+        .alternatingRowBackgrounds()
+        .overlay {
+            ListPlaceholder(isEmpty: model.filteredRegistered.isEmpty, isLoading: model.isRefreshing,
+                            search: model.registeredSearch, title: "Keine registrierten Rufzeichen",
+                            systemImage: "checkmark.seal")
         }
         .searchable(text: $model.registeredSearch, prompt: "Registrierte filtern")
     }

@@ -90,6 +90,46 @@ struct NotConnectedView: View {
     }
 }
 
+// MARK: - Listen
+
+/// Rufzeichen-Zelle für Tabellen: Symbol plus Call in Monospace.
+struct CallsignCell: View {
+    let callsign: String
+    let systemImage: String
+
+    var body: some View {
+        Label {
+            Text(callsign)
+                .font(.body.monospaced().weight(.medium))
+                .textSelection(.enabled)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// Overlay für leere Tabellen: lädt, keine Treffer für die Suche oder schlicht leer.
+struct ListPlaceholder: View {
+    let isEmpty: Bool
+    let isLoading: Bool
+    let search: String
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        if isEmpty {
+            if isLoading {
+                ProgressView("Lade …")
+            } else if !search.trimmingCharacters(in: .whitespaces).isEmpty {
+                ContentUnavailableView.search(text: search)
+            } else {
+                ContentUnavailableView(title, systemImage: systemImage)
+            }
+        }
+    }
+}
+
 // MARK: - Verbindungsstatus
 
 extension ConnectionState {

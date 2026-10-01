@@ -14,11 +14,7 @@ struct BlockListsView: View {
             if model.isConnected {
                 content
             } else {
-                ContentUnavailableView(
-                    "Nicht verbunden",
-                    systemImage: "bolt.horizontal.circle",
-                    description: Text("Im Bereich „Verbindung“ verbinden, um die Listen zu laden.")
-                )
+                NotConnectedView(purpose: "um die Sperrlisten zu laden")
             }
         }
         .navigationTitle("Sperrlisten")
@@ -54,43 +50,57 @@ struct BlockListsView: View {
 
     @ViewBuilder private var content: some View {
         VStack(spacing: 0) {
-            Picker("Liste", selection: $kind) {
-                ForEach(BlockListKind.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .padding([.horizontal, .top])
-
-            if !model.allowWrites {
-                Label("Read-only — Entfernen ist deaktiviert. Im Bereich „Verbindung“ freischalten.",
-                      systemImage: "lock.fill")
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Picker("Liste", selection: $kind) {
+                        ForEach(BlockListKind.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                    Spacer()
+                    Text("\(model.blockEntries.count) Einträge")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                Text(kind.explanation)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .background(.quaternary.opacity(0.25))
+                ModeBanner(allowWrites: model.allowWrites, blocked: "Entfernen gesperrt")
             }
+            .padding()
 
-            List {
-                Section {
-                    if model.filteredBlockEntries.isEmpty {
-                        Text(model.isRefreshing ? "Lade …" : "Keine Einträge.")
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(model.filteredBlockEntries, id: \.self) { entry in
-                        HStack {
-                            Text(entry).font(.body.monospaced())
-                            Spacer()
-                            Button("Entfernen", role: .destructive) { pendingRemove = entry }
-                                .disabled(!model.allowWrites)
-                        }
-                    }
-                } header: {
-                    Text("\(model.blockEntries.count) Einträge")
+            Table(model.filteredBlockEntries.map(BlockEntry.init)) {
+                TableColumn(kind.requiresCallsigns ? "Rufzeichen" : "Wort") { entry in
+                    CallsignCell(callsign: entry.id,
+                                 systemImage: kind.requiresCallsigns ? "nosign" : "text.badge.xmark")
                 }
+                TableColumn("Aktion") { entry in
+                    Button("Entfernen", systemImage: "trash", role: .destructive) {
+                        pendingRemove = entry.id
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(!model.allowWrites)
+                    .help("Eintrag aus der Liste entfernen")
+                }
+                .width(min: 110, ideal: 120, max: 140)
+            }
+            .tableStyle(.inset)
+            .alternatingRowBackgrounds()
+            .overlay {
+                ListPlaceholder(isEmpty: model.filteredBlockEntries.isEmpty, isLoading: model.isRefreshing,
+                                search: model.blockSearch, title: "\(kind.title): keine Einträge",
+                                systemImage: "checkmark.shield")
             }
             .searchable(text: $model.blockSearch, prompt: "\(kind.title) filtern")
         }
     }
+}
+
+/// Table row wrapper: block list entries are plain strings.
+private struct BlockEntry: Identifiable {
+    let id: String
 }
 
 /// The block lists the node exposes, with their show/unset command mapping.
